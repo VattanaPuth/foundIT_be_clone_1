@@ -1,8 +1,14 @@
 package www.founded.com.dto.veryfi_ekyc;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class EkycResponseDTO {
 	private boolean success;
     private String reason;

@@ -15,4 +15,8 @@ public class EkycRequestDTO {
 
     @NotNull
     private IdDocType docType;
+    
+    private String sex;
+    
+    private String nationality;
 }
