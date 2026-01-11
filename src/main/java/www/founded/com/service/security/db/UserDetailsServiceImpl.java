@@ -21,12 +21,9 @@ public class UserDetailsServiceImpl implements UserDetailsService{
 		UserRegister user = registerRepository.findByEmail(usernameOrEmail)
 				.orElseGet(() -> {
 					// If not found by email, try by username
-					UserRegister userByUsername = registerRepository.findByUsername(usernameOrEmail);
-					if (userByUsername == null) {
-						throw new UsernameNotFoundException(
-								"User not found with username or email: " + usernameOrEmail);
-					}
-					return userByUsername;
+					return registerRepository.findByUsername(usernameOrEmail)
+						.orElseThrow(() -> new UsernameNotFoundException(
+							"User not found with username or email: " + usernameOrEmail));
 				});
 		
 		return AuthUserDetails.builder()

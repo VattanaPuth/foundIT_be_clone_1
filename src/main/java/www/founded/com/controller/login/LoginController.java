@@ -84,11 +84,9 @@ public class LoginController {
     public ResponseEntity<?> login(@RequestBody UserLoginRequestDTO loginRequest) {
         try {
             // Try to find user by username or email
-            UserRegister user = userRegisterRepository.findByUsername(loginRequest.getUsername());
-            if (user == null) {
-                user = userRegisterRepository.findByEmail(loginRequest.getUsername())
-                        .orElseThrow(() -> new RuntimeException("Invalid username/email or password"));
-            }
+            UserRegister user = userRegisterRepository.findByUsername(loginRequest.getUsername())
+                .orElseGet(() -> userRegisterRepository.findByEmail(loginRequest.getUsername())
+                        .orElseThrow(() -> new RuntimeException("Invalid username/email or password")));
             
             // Verify password
             if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
@@ -123,7 +121,7 @@ public class LoginController {
             // Get user details from database
             String username = authentication.getName();
             UserRegister user = userRegisterRepository.findByEmail(username)
-                .orElseGet(() -> userRegisterRepository.findByUsername(username));
+                .orElseGet(() -> userRegisterRepository.findByUsername(username).orElse(null));
             
             if (user != null) {
                 Map<String, Object> response = new HashMap<>();

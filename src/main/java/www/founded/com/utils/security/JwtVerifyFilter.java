@@ -30,13 +30,22 @@ public class JwtVerifyFilter extends OncePerRequestFilter{
 			throws ServletException, IOException {
 		String AuthorizationHeader = request.getHeader("Authorization");
 		
+		System.out.println("DEBUG - JwtVerifyFilter: Authorization header = " + AuthorizationHeader);
+		System.out.println("DEBUG - JwtVerifyFilter: Request URI = " + request.getRequestURI());
+		
 		if(AuthorizationHeader == null || !AuthorizationHeader.startsWith("Bearer")) {
+			System.out.println("DEBUG - JwtVerifyFilter: No Bearer token found, continuing filter chain");
 			filterChain.doFilter(request, response);
 			return;
 		}
 		
 		String token = AuthorizationHeader.substring(7);
 		token = token.trim();
+		
+		System.out.println("DEBUG - JwtVerifyFilter: Extracted token (first 50 chars): " + 
+			(token.length() > 50 ? token.substring(0, 50) + "..." : token));
+		System.out.println("DEBUG - JwtVerifyFilter: Token length: " + token.length());
+		System.out.println("DEBUG - JwtVerifyFilter: Token period count: " + token.chars().filter(ch -> ch == '.').count());
 		
 		try {
 			Jws<Claims> claimsJws = Jwts.parserBuilder()
@@ -48,6 +57,10 @@ public class JwtVerifyFilter extends OncePerRequestFilter{
 			String username = body.getSubject();
 			List<Map<String, String>> authorities = (List<Map<String, String>>) body.get("authorities");
 			
+			System.out.println("DEBUG - JwtVerifyFilter: Successfully parsed JWT");
+			System.out.println("DEBUG - JwtVerifyFilter: Username from JWT: " + username);
+			System.out.println("DEBUG - JwtVerifyFilter: Authorities: " + authorities);
+			
 			Set<SimpleGrantedAuthority> grantedAuthorities = authorities.stream()
 						.map(authority -> new SimpleGrantedAuthority(authority.get("authority")))
 						.collect(Collectors.toSet());
@@ -55,10 +68,16 @@ public class JwtVerifyFilter extends OncePerRequestFilter{
 			Authentication getAuthentication = new UsernamePasswordAuthenticationToken(username, null, grantedAuthorities);
 			SecurityContextHolder.getContext().setAuthentication(getAuthentication);
 			
+			System.out.println("DEBUG - JwtVerifyFilter: Authentication set in SecurityContext");
+			
 			filterChain.doFilter(request, response);
 		}catch(ExpiredJwtException e) {
 			logger.info(e.getMessage());
+			System.err.println("DEBUG - JwtVerifyFilter: JWT expired - " + e.getMessage());
 			throw new ApiException(HttpStatus.BAD_REQUEST, e.getMessage());
+		}catch(Exception e) {
+			System.err.println("DEBUG - JwtVerifyFilter: JWT parsing error - " + e.getClass().getName() + ": " + e.getMessage());
+			throw e;
 		}
 	}
 }

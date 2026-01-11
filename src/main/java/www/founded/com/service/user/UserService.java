@@ -15,14 +15,10 @@ public class UserService {
 
     @Transactional
     public void updateUserRole(String usernameOrEmail, String roleName) {
-        // Try to find user by username first
-        UserRegister user = userRegisterRepository.findByUsername(usernameOrEmail);
-        
-        // If not found by username, try by email
-        if (user == null) {
-            user = userRegisterRepository.findByEmail(usernameOrEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + usernameOrEmail));
-        }
+        // Try to find user by username or email
+        UserRegister user = userRegisterRepository.findByUsername(usernameOrEmail)
+            .orElseGet(() -> userRegisterRepository.findByEmail(usernameOrEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + usernameOrEmail)));
 
         // Validate role name
         if (roleName == null || roleName.trim().isEmpty()) {

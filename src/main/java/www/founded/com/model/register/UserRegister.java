@@ -43,6 +43,12 @@ public class UserRegister {
 	private boolean credentialsNonExpired;
 	private boolean enabled;
 	
+	@Column(name = "ekyc_verified", columnDefinition = "BOOLEAN DEFAULT FALSE")
+	private Boolean ekycVerified;
+	
+	@Column(name = "ekyc_verified_at")
+	private Date ekycVerifiedAt;
+	
 	@Column(name = "create_at")
 	private Date createAt;
 	

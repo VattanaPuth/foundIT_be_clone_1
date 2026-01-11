@@ -6,5 +6,5 @@ import www.founded.com.dto.veryfi_ekyc.EkycRequestDTO;
 import www.founded.com.dto.veryfi_ekyc.EkycResponseDTO;
 
 public interface EkycService {
-	EkycResponseDTO verifyIdDocument(MultipartFile file, EkycRequestDTO request);
+	EkycResponseDTO verifyIdDocument(MultipartFile file, EkycRequestDTO request, String username);
 }

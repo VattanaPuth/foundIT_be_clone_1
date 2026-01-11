@@ -2,7 +2,6 @@ package www.founded.com.service.chat_system.impl;
 
 import java.io.IOException;
 import java.sql.Time;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -40,8 +39,10 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	@Override
 	public ChatMessageResponseDTO sendMessage(String senderUsername, String recipientName, ChatMessageRequestDTO messageRequest, MultipartFile file)  {
 		
-		UserRegister senderUserId = userRegisterRepository.findByUsername(senderUsername);
-	    UserRegister recipientUserId = userRegisterRepository.findByUsername(messageRequest.getRecipientName());
+		UserRegister senderUserId = userRegisterRepository.findByUsername(senderUsername)
+			.orElseThrow(() -> new RuntimeException("Sender not found: " + senderUsername));
+	    UserRegister recipientUserId = userRegisterRepository.findByUsername(messageRequest.getRecipientName())
+	    	.orElseThrow(() -> new RuntimeException("Recipient not found: " + messageRequest.getRecipientName()));
 		
 	    Sender sender = new Sender();
 	    sender.setUser(senderUserId);
