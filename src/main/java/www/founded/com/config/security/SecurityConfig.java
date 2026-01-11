@@ -1,5 +1,6 @@
 package www.founded.com.config.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,6 +33,9 @@ public class SecurityConfig{
 	private final UserRegisterService userRegister;
 	private final AuthenticationConfiguration authenticationConfiguration;
 	private final org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource;
+	
+	@Value("${frontend.url:http://localhost:3000}")
+	private String frontendUrl;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -61,7 +65,7 @@ public class SecurityConfig{
 					  .anyRequest().authenticated())
 				.httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
 				.oauth2Login(oauth2 -> oauth2
-			            .successHandler(new OAuth2LoginHandler(userRegister))
+			            .successHandler(new OAuth2LoginHandler(userRegister, frontendUrl))
 			        )
 				.build();
 	}

@@ -120,11 +120,21 @@ public class LoginController {
     @PostMapping("/check-auth")
     public ResponseEntity<?> checkAuth(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("authenticated", true);
-            response.put("username", authentication.getName());
-            response.put("authorities", authentication.getAuthorities());
-            return ResponseEntity.ok(response);
+            // Get user details from database
+            String username = authentication.getName();
+            UserRegister user = userRegisterRepository.findByEmail(username)
+                .orElseGet(() -> userRegisterRepository.findByUsername(username));
+            
+            if (user != null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("authenticated", true);
+                response.put("id", user.getId());
+                response.put("username", user.getUsername());
+                response.put("email", user.getEmail());
+                response.put("role", user.getRole().name());
+                response.put("authorities", authentication.getAuthorities());
+                return ResponseEntity.ok(response);
+            }
         }
         
         Map<String, Object> response = new HashMap<>();

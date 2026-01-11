@@ -1,0 +1,3 @@
+@echo off
+echo Starting backend with local profile...
+mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=local"

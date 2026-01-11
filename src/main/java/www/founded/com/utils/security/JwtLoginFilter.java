@@ -30,7 +30,19 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter{
 		
 		ObjectMapper mapper = new ObjectMapper();
 		try {
+			// Check if request has content
+			if (request.getContentLength() <= 0) {
+				throw new RuntimeException("Request body is empty. Please provide username and password.");
+			}
+			
 			UserLoginRequestDTO loginRequest = mapper.readValue(request.getInputStream(), UserLoginRequestDTO.class);
+			
+			// Validate login request fields
+			if (loginRequest.getUsername() == null || loginRequest.getUsername().isEmpty() ||
+				loginRequest.getPassword() == null || loginRequest.getPassword().isEmpty()) {
+				throw new RuntimeException("Username and password are required.");
+			}
+			
 			Authentication authentication = new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword());
 			Authentication authenticate = authenticationManager.authenticate(authentication);
 			return authenticate;

@@ -4,8 +4,10 @@ import java.util.Date;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import www.founded.com.enum_.Status;
 import www.founded.com.enum_.security.Role;
 import www.founded.com.model.register.UserRegister;
 import www.founded.com.repository.register.UserRegisterRepository;
@@ -25,6 +27,7 @@ public class UserRegisterServiceImpl implements UserRegisterService{
 	}
 
 	@Override // oAuth2
+	@Transactional
 	public UserRegister findOrCreateFromGoogle(String email, String googleSubject) {
 		return registerRepository.findByEmail(email)
 				.orElseGet(() -> {
@@ -32,7 +35,7 @@ public class UserRegisterServiceImpl implements UserRegisterService{
 						user.setEmail(email);
 						user.setUsername(email);
 	                    user.setGoogleSubject(googleSubject);
-	                    user.setStatus(user.getStatus());
+	                    user.setStatus(Status.ACTIVE); // Set default status
 	                    user.setAccountNonExpired(true);
 	                    user.setAccountNonLocked(true);
 	                    user.setCredentialsNonExpired(true);
@@ -41,14 +44,16 @@ public class UserRegisterServiceImpl implements UserRegisterService{
 	                    
 	                    Role role = decideRoleForGoogleUser(email);
 	                    user.setRole(role);
-					return registerRepository.save(user);
+	                    
+	                    // Save and flush to ensure immediate database commit
+					UserRegister savedUser = registerRepository.save(user);
+					registerRepository.flush();
+					return savedUser;
 				});
 	}
 	
 	private Role decideRoleForGoogleUser(String email) {
-	    if (email.endsWith("@gmail.com")) {
-	    	return Role.CLIENT;
-	    }
-		return null;
+	    // Default to CLIENT for all OAuth2 users
+	    return Role.CLIENT;
 	}
 }
