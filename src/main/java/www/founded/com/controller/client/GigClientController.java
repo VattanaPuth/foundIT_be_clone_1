@@ -6,14 +6,21 @@ import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import www.founded.com.dto.client.GigClientDTO;
 import www.founded.com.model.client.GigClient;
 import www.founded.com.service.client.impl.GigClientServiceImpl;
 
@@ -38,5 +45,46 @@ public class GigClientController {
             Pageable pageable) {
         Page<GigClient> gigs = gigService.getPublicGigs(params, pageable); // Fetch only public gigs
         return ResponseEntity.ok(gigs);
+    }
+
+    // Create a new gig (automatically set as public)
+    @PostMapping("/create")
+    public ResponseEntity<GigClient> createGig(
+            @RequestBody GigClientDTO gigDTO,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        GigClient createdGig = gigService.createGig(gigDTO, userEmail);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdGig);
+    }
+
+    // Get current user's gigs
+    @GetMapping("/my-gigs")
+    public ResponseEntity<Page<GigClient>> getMyGigs(
+            Authentication authentication,
+            Pageable pageable) {
+        String userEmail = authentication.getName();
+        Page<GigClient> myGigs = gigService.getGigsByUser(userEmail, pageable);
+        return ResponseEntity.ok(myGigs);
+    }
+
+    // Update a gig
+    @PutMapping("/{id}")
+    public ResponseEntity<GigClient> updateGig(
+            @PathVariable Long id,
+            @RequestBody GigClientDTO gigDTO,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        GigClient updatedGig = gigService.updateGig(id, gigDTO, userEmail);
+        return ResponseEntity.ok(updatedGig);
+    }
+
+    // Delete a gig
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGig(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        gigService.deleteGig(id, userEmail);
+        return ResponseEntity.noContent().build();
     }
 }

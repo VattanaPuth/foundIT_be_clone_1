@@ -14,7 +14,7 @@ import lombok.Getter;
 public enum Role {
 	
 	ADMIN(Set.of(Permission.READ_USER, Permission.DELETE_USER)), 
-	CLIENT(Set.of(Permission.READ_GIG)),
+	CLIENT(Set.of(Permission.CREATE_GIG, Permission.READ_GIG, Permission.UPDATE_GIG, Permission.DELETE_GIG)),
 	SELLER(Set.of(Permission.CREATE_GIG, Permission.READ_GIG, Permission.UPDATE_GIG, Permission.DELETE_GIG)),
 	FREELANCER(Set.of(Permission.CREATE_GIG, Permission.READ_GIG, Permission.UPDATE_GIG, Permission.DELETE_GIG));
 	
