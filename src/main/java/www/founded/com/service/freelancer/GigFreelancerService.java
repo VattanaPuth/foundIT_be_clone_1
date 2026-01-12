@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
+import www.founded.com.dto.freelancer.GigFreelancerClientViewDTO;
 import www.founded.com.model.freelancer.GigFreelancer;
 
 public interface GigFreelancerService {	
@@ -16,5 +17,7 @@ public interface GigFreelancerService {
 	void deleteGigById(Long deleteGigById);
 	void deleteImage(Long deleteImageId);
 	Page<GigFreelancer> getGigs(Map<String, String> params);
+	Page<GigFreelancer> getPublicGigs(Map<String, String> params);
+	Page<GigFreelancerClientViewDTO> getGigsForClientView(Map<String, String> params);
 	GigFreelancer setPublic();
 }

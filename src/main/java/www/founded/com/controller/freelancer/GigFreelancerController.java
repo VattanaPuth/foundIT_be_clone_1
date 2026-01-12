@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
+import www.founded.com.dto.freelancer.GigFreelancerClientViewDTO;
 import www.founded.com.dto.freelancer.GigFreelancerDTO;
 import www.founded.com.dto.pageable.PageDTO;
 import www.founded.com.mapper.GigFreelancerMapper;
@@ -53,8 +54,14 @@ public class GigFreelancerController {
     
     @GetMapping("/public") // Get all public gigs for clients to view
     public ResponseEntity<?> getPublicGigs(@RequestParam Map<String, String> params) {
-        Page<GigFreelancer> gigs = gigService.getGigs(params);
-        // Map your pageable result to the desired DTO format
+        Page<GigFreelancer> gigs = gigService.getPublicGigs(params);
+        PageDTO pages = new PageDTO(gigs);
+        return ResponseEntity.ok(pages);
+    }
+    
+    @GetMapping("/client-view") // Get all public gigs formatted for client home page
+    public ResponseEntity<?> getGigsForClientView(@RequestParam(required = false) Map<String, String> params) {
+        Page<GigFreelancerClientViewDTO> gigs = gigService.getGigsForClientView(params);
         PageDTO pages = new PageDTO(gigs);
         return ResponseEntity.ok(pages);
     }
