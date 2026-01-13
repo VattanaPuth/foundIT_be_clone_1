@@ -19,5 +19,6 @@ public interface GigFreelancerService {
 	Page<GigFreelancer> getGigs(Map<String, String> params);
 	Page<GigFreelancer> getPublicGigs(Map<String, String> params);
 	Page<GigFreelancerClientViewDTO> getGigsForClientView(Map<String, String> params);
+	GigFreelancerClientViewDTO getGigDetailForClientView(Long id);
 	GigFreelancer setPublic();
 }

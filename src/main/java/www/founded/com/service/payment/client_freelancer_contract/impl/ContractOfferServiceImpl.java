@@ -10,6 +10,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import www.founded.com.dto.client_freelancer_contract.ClientOfferCreateDTO;
 import www.founded.com.dto.client_freelancer_contract.ClientOfferMilestoneCreateDTO;
+import www.founded.com.dto.client_freelancer_contract.ContractOfferMilestoneViewDTO;
+import www.founded.com.dto.client_freelancer_contract.ContractOfferViewDTO;
 import www.founded.com.enum_.client_freelancer_contract.ContractOfferStatus;
 import www.founded.com.enum_.client_freelancer_contract.OfferDirection;
 import www.founded.com.enum_.client_freelancer_contract.OfferSourceType;
@@ -30,8 +32,8 @@ import www.founded.com.repository.payment.EscrowRepository;
 import www.founded.com.repository.payment.MilestoneRepository;
 import www.founded.com.repository.payment.ProjectRepository;
 import www.founded.com.service.client.ClientService;
-import www.founded.com.service.payment.client_freelancer_contract.ContractOfferService;
 import www.founded.com.service.freelancer.FreelancerService;
+import www.founded.com.service.payment.client_freelancer_contract.ContractOfferService;
 
 @Service
 @RequiredArgsConstructor
@@ -55,14 +57,16 @@ public class ContractOfferServiceImpl implements ContractOfferService {
     @Transactional
     public Long createClientOffer(ClientOfferCreateDTO dto) {
     	
-    	// Validate client/freelancer exists
-    	validateClientAndFreelancerExist(dto.getClientId(), dto.getFreelancerId());
+    	// Validate and fetch client by user ID, freelancer by ID
+        Client client = clientService.getByUserId(dto.getClientId());
+        Freelancer freelancer = freelancerService.getById(dto.getFreelancerId());
         
     	// Validate milestone sum equals totalBudget
         validateMilestoneSum(dto);
 
         ContractOffer offer = new ContractOffer();
-        offer.setClientId(com.toContractOfferClient(dto));
+        offer.setClientId(client);
+        offer.setFreelancerId(freelancer);
         offer.setDirection(OfferDirection.CLIENT_TO_FREELANCER);
         offer.setSourceType(dto.getGigId() != null ? OfferSourceType.GIG : OfferSourceType.DIRECT);
         offer.setSourceId(dto.getGigId());
@@ -73,6 +77,7 @@ public class ContractOfferServiceImpl implements ContractOfferService {
         offer.setCurrency(dto.getCurrency() == null ? "USD" : dto.getCurrency());
         offer.setMessage(dto.getMessage());
         offer.setExpiresAt(dto.getExpiresAt());
+        offer.setPublic(false); // Default to not public
 
         offer.setStatus(ContractOfferStatus.SENT);
         offer = offerRepo.save(offer);
@@ -99,12 +104,6 @@ public class ContractOfferServiceImpl implements ContractOfferService {
         if (sum.compareTo(dto.getTotalBudget()) != 0) {
             throw new IllegalArgumentException("Milestones total must equal totalBudget.");
         }
-    }
-    
- // Helper method to validate client and freelancer existence
-    private void validateClientAndFreelancerExist(Long clientId, Long freelancerId) {
-        clientService.getById(clientId);
-        freelancerService.getById(freelancerId);
     }
 
     // -----------------------------
@@ -220,4 +219,68 @@ public class ContractOfferServiceImpl implements ContractOfferService {
         }
         return (ContractOffer) offerRepo.saveAll(offers);  // Save all updated offers
     }
+	
+	// -----------------------------
+    // View methods
+    // -----------------------------
+	
+	@Override
+	public List<ContractOfferViewDTO> getOffersByClientUserId(Long userId) {
+	    Client client = clientService.getByUserId(userId);
+	    List<ContractOffer> offers = offerRepo.findByClientId(client);
+	    return offers.stream().map(this::toViewDTO).toList();
+	}
+	
+	@Override
+	public List<ContractOfferViewDTO> getOffersByFreelancerId(Long freelancerId) {
+	    Freelancer freelancer = freelancerService.getById(freelancerId);
+	    List<ContractOffer> offers = offerRepo.findByFreelancerId(freelancer);
+	    return offers.stream().map(this::toViewDTO).toList();
+	}
+	
+	@Override
+	public ContractOfferViewDTO getOfferById(Long offerId) {
+	    ContractOffer offer = offerRepo.findById(offerId)
+	            .orElseThrow(() -> new IllegalArgumentException("Offer not found"));
+	    return toViewDTO(offer);
+	}
+	
+	private ContractOfferViewDTO toViewDTO(ContractOffer offer) {
+	    ContractOfferViewDTO dto = new ContractOfferViewDTO();
+	    dto.setId(offer.getId());
+	    
+	    // Client info
+	    dto.setClientId(offer.getClientId().getId());
+	    dto.setClientName(offer.getClientId().getName());
+	    
+	    // Freelancer info
+	    dto.setFreelancerId(offer.getFreelancerId().getId());
+	    dto.setFreelancerName(offer.getFreelancerId().getName());
+	    
+	    // Gig info
+	    dto.setGigId(offer.getSourceId());
+	    
+	    dto.setDirection(offer.getDirection());
+	    dto.setTitle(offer.getTitle());
+	    dto.setDescription(offer.getDescription());
+	    dto.setTotalBudget(offer.getTotalBudget());
+	    dto.setCurrency(offer.getCurrency());
+	    dto.setMessage(offer.getMessage());
+	    dto.setStatus(offer.getStatus());
+	    dto.setCreatedAt(offer.getCreatedAt());
+	    dto.setExpiresAt(offer.getExpiresAt());
+	    
+	    // Get milestones
+	    List<ContractOfferMilestone> milestones = offerMsRepo.findByOfferIdOrderByOrderIndexAsc(offer.getId());
+	    dto.setMilestones(milestones.stream().map(m -> {
+	        ContractOfferMilestoneViewDTO msDto = new ContractOfferMilestoneViewDTO();
+	        msDto.setId(m.getId());
+	        msDto.setDescription(m.getDescription());
+	        msDto.setAmount(m.getAmount());
+	        msDto.setOrderIndex(m.getOrderIndex());
+	        return msDto;
+	    }).toList());
+	    
+	    return dto;
+	}
 }

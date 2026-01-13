@@ -3,13 +3,16 @@ package www.founded.com.service.payment.client_freelancer_contract.impl;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import www.founded.com.dto.client_freelancer_contract.ProposalCreateDTO;
+import www.founded.com.dto.client_freelancer_contract.ProposalDetailDTO;
 import www.founded.com.dto.client_freelancer_contract.ProposalMilestoneCreateDTO;
+import www.founded.com.dto.client_freelancer_contract.ProposalMilestoneDTO;
 import www.founded.com.enum_.client_freelancer_contract.ContractOfferStatus;
 import www.founded.com.enum_.client_freelancer_contract.JobPostStatus;
 import www.founded.com.enum_.client_freelancer_contract.OfferDirection;
@@ -19,6 +22,7 @@ import www.founded.com.enum_.payment.MilestoneStatus;
 import www.founded.com.enum_.payment.ProjectStatus;
 import www.founded.com.model.client.Client;
 import www.founded.com.model.freelancer.Freelancer;
+import www.founded.com.model.freelancer.GigFreelancer;
 import www.founded.com.model.payment.Escrow;
 import www.founded.com.model.payment.Milestone;
 import www.founded.com.model.payment.Project;
@@ -28,6 +32,7 @@ import www.founded.com.model.payment.client_freelancer_contract.JobPost;
 import www.founded.com.repository.client_freelancer_contract.ContractOfferMilestoneRepository;
 import www.founded.com.repository.client_freelancer_contract.ContractOfferRepository;
 import www.founded.com.repository.client_freelancer_contract.JobPostRepository;
+import www.founded.com.repository.freelancer.GigFreelancerRepository;
 import www.founded.com.repository.payment.EscrowRepository;
 import www.founded.com.repository.payment.MilestoneRepository;
 import www.founded.com.repository.payment.ProjectRepository;
@@ -49,6 +54,145 @@ public class ProposalServiceImpl implements ProposalService {
 
     private final ClientService clientService;
     private final FreelancerService freelancerService;
+    private final GigFreelancerRepository gigRepo;
+
+    // -----------------------------
+    // GET methods with full details
+    // -----------------------------
+    @Override
+    public ProposalDetailDTO getProposalDetailById(Long proposalId) {
+        ContractOffer offer = offerRepo.findById(proposalId)
+                .orElseThrow(() -> new IllegalArgumentException("Proposal not found"));
+        return mapToProposalDetail(offer);
+    }
+
+    @Override
+    public List<ProposalDetailDTO> getProposalDetailsForClient(Long clientId) {
+        List<ContractOffer> offers = offerRepo.findByClientId_IdAndDirection(clientId, OfferDirection.FREELANCER_TO_CLIENT);
+        return offers.stream()
+                .map(this::mapToProposalDetail)
+                .collect(Collectors.toList());
+    }
+
+    private ProposalDetailDTO mapToProposalDetail(ContractOffer offer) {
+        ProposalDetailDTO dto = new ProposalDetailDTO();
+        dto.setId(offer.getId());
+        dto.setJobPostId(offer.getSourceId());
+        dto.setClientId(offer.getClientId() != null ? offer.getClientId().getId() : null);
+        dto.setFreelancerId(offer.getFreelancerId() != null ? offer.getFreelancerId().getId() : null);
+        dto.setCoverLetter(offer.getMessage());
+        dto.setProposedBudget(offer.getTotalBudget());
+        dto.setCurrency(offer.getCurrency());
+        dto.setDeliveryDays(offer.getDeliveryDays());
+        dto.setStatus(mapContractOfferStatusToProposalStatus(offer.getStatus()));
+        dto.setProjectId(offer.getProjectId());
+        dto.setCreatedAt(offer.getCreatedAt());
+
+        // Fetch job title
+        if (offer.getSourceId() != null) {
+            jobPostRepo.findById(offer.getSourceId()).ifPresent(job -> {
+                dto.setJobTitle(job.getTitle());
+            });
+        }
+
+        // Fetch freelancer details
+        if (offer.getFreelancerId() != null) {
+            try {
+                Freelancer freelancer = freelancerService.getById(offer.getFreelancerId().getId());
+                dto.setFreelancerName(freelancer.getName());
+
+                // Try to get gig details for more info
+                List<GigFreelancer> gigs = gigRepo.findAll();
+                gigs.stream()
+                    .filter(g -> g.getFreelancer().getId().equals(freelancer.getId()))
+                    .findFirst()
+                    .ifPresent(gig -> {
+                        dto.setFreelancerBio(gig.getShortBio());
+                        dto.setFreelancerSkill(gig.getUserSkill() != null ? gig.getUserSkill().getSkill() : null);
+                        
+                        // Generate avatar URL
+                        String name = freelancer.getName() != null ? freelancer.getName() : "User";
+                        String encodedName = java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
+                        dto.setFreelancerAvatar("https://ui-avatars.com/api/?name=" + encodedName + "&size=128&background=random&color=fff&bold=true");
+                    });
+            } catch (Exception e) {
+                // Freelancer not found, continue
+            }
+        }
+
+        // Fetch milestones
+        List<ContractOfferMilestone> offerMilestones = offerMsRepo.findByOfferIdOrderByOrderIndexAsc(offer.getId());
+        List<ProposalMilestoneDTO> milestoneDTOs = offerMilestones.stream()
+                .map(this::mapToMilestoneDTO)
+                .collect(Collectors.toList());
+        dto.setMilestones(milestoneDTOs);
+
+        return dto;
+    }
+
+    private ProposalMilestoneDTO mapToMilestoneDTO(ContractOfferMilestone milestone) {
+        ProposalMilestoneDTO dto = new ProposalMilestoneDTO();
+        dto.setId(milestone.getId());
+        dto.setOfferId(milestone.getOfferId());
+        dto.setDescription(milestone.getDescription());
+        dto.setAmount(milestone.getAmount());
+        dto.setOrderIndex(milestone.getOrderIndex());
+        return dto;
+    }
+
+    // -----------------------------
+    // GET methods (basic)
+    // -----------------------------
+    @Override
+    public www.founded.com.model.payment.freelancer_client_contract.Proposal getProposalById(Long proposalId) {
+        return offerRepo.findById(proposalId)
+                .map(this::mapToProposal)
+                .orElseThrow(() -> new IllegalArgumentException("Proposal not found"));
+    }
+
+    @Override
+    public List<www.founded.com.model.payment.freelancer_client_contract.Proposal> getProposalsForClient(Long clientId) {
+        List<ContractOffer> offers = offerRepo.findByClientId_IdAndDirection(clientId, OfferDirection.FREELANCER_TO_CLIENT);
+        return offers.stream()
+                .map(this::mapToProposal)
+                .toList();
+    }
+
+    @Override
+    public List<www.founded.com.model.payment.freelancer_client_contract.Proposal> getProposalsForFreelancer(Long freelancerId) {
+        List<ContractOffer> offers = offerRepo.findByFreelancerId_IdAndDirection(freelancerId, OfferDirection.FREELANCER_TO_CLIENT);
+        return offers.stream()
+                .map(this::mapToProposal)
+                .toList();
+    }
+
+    private www.founded.com.model.payment.freelancer_client_contract.Proposal mapToProposal(ContractOffer offer) {
+        www.founded.com.model.payment.freelancer_client_contract.Proposal proposal = 
+            new www.founded.com.model.payment.freelancer_client_contract.Proposal();
+        proposal.setId(offer.getId());
+        proposal.setJobPostId(offer.getSourceId());
+        proposal.setClientId(offer.getClientId() != null ? offer.getClientId().getId() : null);
+        proposal.setFreelancerId(offer.getFreelancerId() != null ? offer.getFreelancerId().getId() : null);
+        proposal.setCoverLetter(offer.getMessage());
+        proposal.setProposedBudget(offer.getTotalBudget());
+        proposal.setCurrency(offer.getCurrency());
+        proposal.setDeliveryDays(offer.getDeliveryDays());
+        proposal.setStatus(mapContractOfferStatusToProposalStatus(offer.getStatus()));
+        proposal.setProjectId(offer.getProjectId());
+        proposal.setCreatedAt(offer.getCreatedAt());
+        return proposal;
+    }
+
+    private www.founded.com.enum_.client_freelancer_contract.ProposalStatus mapContractOfferStatusToProposalStatus(
+            ContractOfferStatus status) {
+        return switch (status) {
+            case SENT -> www.founded.com.enum_.client_freelancer_contract.ProposalStatus.PENDING;
+            case ACCEPTED -> www.founded.com.enum_.client_freelancer_contract.ProposalStatus.ACCEPTED;
+            case REJECTED -> www.founded.com.enum_.client_freelancer_contract.ProposalStatus.REJECTED;
+            case WITHDRAWN -> www.founded.com.enum_.client_freelancer_contract.ProposalStatus.WITHDRAWN;
+            default -> www.founded.com.enum_.client_freelancer_contract.ProposalStatus.PENDING;
+        };
+    }
 
     // -----------------------------
     // 1) Freelancer sends proposal

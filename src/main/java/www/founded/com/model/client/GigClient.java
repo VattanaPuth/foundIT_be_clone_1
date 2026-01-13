@@ -50,6 +50,10 @@ public class GigClient {
     // User who posted the gig (email or username)
     @Column(nullable = false)
     private String postedBy;
+    
+    // Client ID for profile linking
+    @Column(name = "client_id")
+    private Long clientId;
 
     // Creation date
     @Temporal(TemporalType.TIMESTAMP)

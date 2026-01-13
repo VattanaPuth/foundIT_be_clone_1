@@ -18,5 +18,10 @@ public class ClientServiceImpl implements ClientService {
 	public Client getById(Long id) {
 		return clientRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Client Not Found ", id));
 	}
+	
+	@Override
+	public Client getByUserId(Long userId) {
+		return clientRepo.findByUser_Id(userId).orElseThrow(() -> new ResourceNotFoundException("Client Not Found for User ", userId));
+	}
 
 }

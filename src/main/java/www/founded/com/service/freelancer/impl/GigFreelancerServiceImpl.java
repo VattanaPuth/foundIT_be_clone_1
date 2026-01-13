@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -99,7 +98,7 @@ public class GigFreelancerServiceImpl implements GigFreelancerService{
 		
 		if(params.containsKey("id")) {
 			String id = params.get("id");
-			gigFilter.setId(Long.parseLong(id));
+			gigFilter.setId(Long.valueOf(id));
 		}
 		
 		if(params.containsKey("name")) {
@@ -109,7 +108,7 @@ public class GigFreelancerServiceImpl implements GigFreelancerService{
 		
 		if(params.containsKey("description")) {
 			String des = params.get("description");
-			gigFilter.setDescription(des);;
+			gigFilter.setDescription(des);
 		}
 		
 		if(params.containsKey("price")) {
@@ -187,15 +186,31 @@ public class GigFreelancerServiceImpl implements GigFreelancerService{
             
             // Get freelancer information if available
             Freelancer freelancer = gig.getFreelancer();
+            String freelancerName;
             if (freelancer != null) {
-                dto.setFreelancerName(freelancer.getName() != null ? freelancer.getName() : "Freelancer");
+                dto.setFreelancerId(freelancer.getId()); // Set the freelancer ID
+                freelancerName = freelancer.getName() != null ? freelancer.getName() : "Freelancer";
+                dto.setFreelancerName(freelancerName);
                 // Set default values since Freelancer model is minimal
                 dto.setExperience("Intermediate");
                 dto.setLocation("Cambodia");
             } else {
-                dto.setFreelancerName("Unknown");
+                dto.setFreelancerId(null); // No freelancer associated
+                freelancerName = "Freelancer " + gig.getId();
+                dto.setFreelancerName(freelancerName);
                 dto.setExperience("Entry");
-                dto.setLocation("Unknown");
+                dto.setLocation("Cambodia");
+            }
+            
+            // Generate avatar image URL using DiceBear API or UI Avatars
+            // If no image data exists, generate a placeholder
+            if (gig.getImageData() == null || gig.getImageData().length == 0) {
+                // Use UI Avatars API for placeholder images
+                String encodedName = freelancerName.replace(" ", "+");
+                dto.setImageUrl("https://ui-avatars.com/api/?name=" + encodedName + "&size=128&background=random&color=fff&bold=true");
+            } else {
+                // If image exists, indicate it's available (frontend can fetch via separate endpoint)
+                dto.setImageUrl("/gigs/freelancer/" + gig.getId() + "/freelancer/image");
             }
             
             // Get skill information if available
@@ -214,6 +229,64 @@ public class GigFreelancerServiceImpl implements GigFreelancerService{
             
             return dto;
         });
+    }
+    
+    // Get single gig detail for client view
+    @Override
+    public GigFreelancerClientViewDTO getGigDetailForClientView(Long id) {
+        GigFreelancer gig = gigRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Gig", id));
+        
+        GigFreelancerClientViewDTO dto = new GigFreelancerClientViewDTO();
+        dto.setId(gig.getId());
+        dto.setShortBio(gig.getShortBio());
+        dto.setDescription(gig.getDescription());
+        dto.setPrice(gig.getPrice());
+        dto.setImageType(gig.getImageType());
+        dto.setImageData(gig.getImageData());
+        dto.setVerified(false); // Default value
+        
+        // Get freelancer information if available
+        Freelancer freelancer = gig.getFreelancer();
+        String freelancerName;
+        if (freelancer != null) {
+            dto.setFreelancerId(freelancer.getId()); // Set the freelancer ID
+            freelancerName = freelancer.getName() != null ? freelancer.getName() : "Freelancer";
+            dto.setFreelancerName(freelancerName);
+            // Set default values since Freelancer model is minimal
+            dto.setExperience("Intermediate");
+            dto.setLocation("Cambodia");
+        } else {
+            dto.setFreelancerId(null); // No freelancer associated
+            freelancerName = "Freelancer " + gig.getId();
+            dto.setFreelancerName(freelancerName);
+            dto.setExperience("Entry");
+            dto.setLocation("Cambodia");
+        }
+        
+        // Generate avatar image URL
+        if (gig.getImageData() == null || gig.getImageData().length == 0) {
+            String encodedName = freelancerName.replace(" ", "+");
+            dto.setImageUrl("https://ui-avatars.com/api/?name=" + encodedName + "&size=128&background=random&color=fff&bold=true");
+        } else {
+            dto.setImageUrl("/gigs/freelancer/" + gig.getId() + "/freelancer/image");
+        }
+        
+        // Get skill information if available
+        UserSkill skill = gig.getUserSkill();
+        if (skill != null) {
+            dto.setSkillName(skill.getSkill());
+        } else {
+            dto.setSkillName("General");
+        }
+        
+        // Set default/calculated values for missing fields
+        dto.setRating(4.5 + (Math.random() * 0.5)); // Random rating between 4.5-5.0
+        dto.setReviewCount((int) (Math.random() * 200) + 50); // Random reviews 50-250
+        dto.setLastActiveDays((int) (Math.random() * 15)); // Random 0-15 days
+        dto.setWorkCount((int) (Math.random() * 150) + 50); // Random work count 50-200
+        
+        return dto;
     }
 
 	@Override

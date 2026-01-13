@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -18,7 +19,8 @@ import lombok.Data;
 public class ContractOfferMilestone {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "contract_offer_milestone_seq")
+    @SequenceGenerator(name = "contract_offer_milestone_seq", sequenceName = "contract_offer_milestone_seq", allocationSize = 1)
     private Long id;
 
     @Column(name="offer_id", nullable=false)

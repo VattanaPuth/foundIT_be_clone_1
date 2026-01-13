@@ -66,6 +66,12 @@ public class GigFreelancerController {
         return ResponseEntity.ok(pages);
     }
     
+    @GetMapping("/{id}/client-view") // Get single gig detail for client view
+    public ResponseEntity<?> getGigDetailForClientView(@PathVariable Long id) {
+        GigFreelancerClientViewDTO gig = gigService.getGigDetailForClientView(id);
+        return ResponseEntity.ok(gig);
+    }
+    
     @PostMapping("set-all-public") // Set gig as public
     public ResponseEntity<?> setPublic(@PathVariable Long id) {
         GigFreelancer updatedGig = gigService.setPublic();

@@ -14,14 +14,37 @@ import www.founded.com.service.freelancer.FreelancerService;
 public interface ContractOfferMapper {
 	ContractOfferMapper INSTANCE = Mappers.getMapper(ContractOfferMapper.class);
 
-    @Mapping(target = "name", source = "clientId")
+    @Mapping(target = "id", source = "clientId")
+    @Mapping(target = "name", ignore = true)
+    @Mapping(target = "user", ignore = true)
 	Client toContractOfferClient(ClientOfferCreateDTO toContractOfferDTO);
-    @Mapping(target = "name", source = "freelancerId")
+    
+    @Mapping(target = "id", source = "freelancerId")
+    @Mapping(target = "name", ignore = true)
+    @Mapping(target = "user", ignore = true)
     Freelancer toContractOfferFreelancer(ClientOfferCreateDTO toContractOfferDTO);
 	
-	@Mapping(target = "freelancerId", source = "name")
-    @Mapping(target = "clientId", source = "name") 
-	ClientOfferCreateDTO toContractOfferDTO(Client toContractOffer);
+	@Mapping(target = "freelancerId", source = "id")
+    @Mapping(target = "clientId", ignore = true)
+    @Mapping(target = "gigId", ignore = true)
+    @Mapping(target = "title", ignore = true)
+    @Mapping(target = "description", ignore = true)
+    @Mapping(target = "totalBudget", ignore = true)
+    @Mapping(target = "currency", ignore = true)
+    @Mapping(target = "expiresAt", ignore = true)
+    @Mapping(target = "milestones", ignore = true)
+    @Mapping(target = "message", ignore = true)
 	ClientOfferCreateDTO toContractOfferDTO(Freelancer toContractOfferFreelancer);
 	
+	@Mapping(target = "clientId", source = "id")
+    @Mapping(target = "freelancerId", ignore = true)
+    @Mapping(target = "gigId", ignore = true)
+    @Mapping(target = "title", ignore = true)
+    @Mapping(target = "description", ignore = true)
+    @Mapping(target = "totalBudget", ignore = true)
+    @Mapping(target = "currency", ignore = true)
+    @Mapping(target = "expiresAt", ignore = true)
+    @Mapping(target = "milestones", ignore = true)
+    @Mapping(target = "message", ignore = true)
+	ClientOfferCreateDTO toContractOfferDTO(Client toContractOffer);
 }

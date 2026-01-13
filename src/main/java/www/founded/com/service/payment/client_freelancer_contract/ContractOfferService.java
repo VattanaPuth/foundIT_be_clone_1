@@ -1,6 +1,9 @@
 package www.founded.com.service.payment.client_freelancer_contract;
 
+import java.util.List;
+
 import www.founded.com.dto.client_freelancer_contract.ClientOfferCreateDTO;
+import www.founded.com.dto.client_freelancer_contract.ContractOfferViewDTO;
 import www.founded.com.model.client.Client;
 import www.founded.com.model.freelancer.Freelancer;
 import www.founded.com.model.payment.Project;
@@ -12,4 +15,9 @@ public interface ContractOfferService {
     void rejectOfferByFreelancer(Long offerId,  Freelancer freelancerId, String reason);
     void cancelOfferByClient(Long offerId, Client clientId);
     ContractOffer setAllOffersPublic();
+    
+    // View methods
+    List<ContractOfferViewDTO> getOffersByClientUserId(Long userId);
+    List<ContractOfferViewDTO> getOffersByFreelancerId(Long freelancerId);
+    ContractOfferViewDTO getOfferById(Long offerId);
 }

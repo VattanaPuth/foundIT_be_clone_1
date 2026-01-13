@@ -62,6 +62,7 @@ public class LoginController {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful with email");
             response.put("user", Map.of(
+                "id", user.getId(),
                 "email", user.getEmail(),
                 "username", user.getUsername(),
                 "role", user.getRole().name()
@@ -97,6 +98,7 @@ public class LoginController {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
             response.put("user", Map.of(
+                "id", user.getId(),
                 "email", user.getEmail(),
                 "username", user.getUsername(),
                 "role", user.getRole().name()

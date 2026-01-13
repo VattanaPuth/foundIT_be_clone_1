@@ -38,6 +38,16 @@ public class GigClientController {
         return ResponseEntity.ok(updatedGigs);
     }
 
+    // Set a single gig to public (publish)
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<GigClient> publishGig(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        GigClient publishedGig = gigService.publishGig(id, userEmail);
+        return ResponseEntity.ok(publishedGig);
+    }
+
     // Get all public gigs (for freelancers to view)
     @GetMapping("/public")
     public ResponseEntity<Page<GigClient>> getPublicGigs(
@@ -86,5 +96,16 @@ public class GigClientController {
         String userEmail = authentication.getName();
         gigService.deleteGig(id, userEmail);
         return ResponseEntity.noContent().build();
+    }
+    
+    // Migration helper: Update all gigs with clientId
+    @PostMapping("/migrate-client-ids")
+    public ResponseEntity<String> migrateClientIds() {
+        try {
+            int updated = gigService.migrateClientIds();
+            return ResponseEntity.ok("Updated " + updated + " gigs with client IDs");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
     }
 }
