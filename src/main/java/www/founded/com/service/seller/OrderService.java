@@ -16,5 +16,8 @@ public interface OrderService {
     List<Order> getOrdersByClient(Long clientId);
     List<Order> getOrdersByFreelancer(Long freelancerId);
     List<Order> getOrdersBySeller(Long sellerId);
+
+    // Search orders by query
+    List<Order> searchOrders(String query);
     List<OrderHistory> getOrderHistory(Long orderId);
 }

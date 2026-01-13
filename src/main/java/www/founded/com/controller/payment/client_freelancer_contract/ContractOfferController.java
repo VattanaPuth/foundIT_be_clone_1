@@ -1,3 +1,4 @@
+
 package www.founded.com.controller.payment.client_freelancer_contract;
 
 import java.util.List;
@@ -84,5 +85,15 @@ public class ContractOfferController {
     @GetMapping("/{offerId}")
     public ResponseEntity<ContractOfferViewDTO> getOffer(@PathVariable Long offerId) {
         return ResponseEntity.ok(offerService.getOfferById(offerId));
+    }
+
+    // Search contracts by query (for global search)
+    @GetMapping("/search")
+    public ResponseEntity<List<ContractOfferViewDTO>> searchContracts(@RequestParam("query") String query) {
+        List<ContractOfferViewDTO> results = offerService.getAllOffers().stream()
+            .filter(contract -> (contract.getTitle() != null && contract.getTitle().toLowerCase().contains(query.toLowerCase())) ||
+                              (contract.getId() != null && contract.getId().toString().contains(query)))
+            .toList();
+        return ResponseEntity.ok(results);
     }
 }

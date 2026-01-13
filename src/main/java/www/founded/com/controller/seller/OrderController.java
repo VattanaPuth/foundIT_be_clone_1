@@ -77,4 +77,12 @@ public class OrderController {
 		Escrow escrow = orderService.releasePayment(orderId);
 		return ResponseEntity.ok(escrow);
 	}
+	
+	// Search orders by query (for global search)
+	@GetMapping("/search")
+	public ResponseEntity<List<Order>> searchOrders(@RequestParam("query") String query) {
+		// Example: search by title or id (customize as needed)
+		List<Order> results = orderService.searchOrders(query);
+		return ResponseEntity.ok(results);
+	}
 }

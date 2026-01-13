@@ -22,6 +22,9 @@ import www.founded.com.model.payment.Escrow;
 @Table(name = "orders")
 @Data
 public class Order {
+    public String getTitle() {
+        return projectTitle;
+    }
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

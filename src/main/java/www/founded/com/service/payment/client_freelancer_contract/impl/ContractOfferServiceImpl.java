@@ -1,3 +1,4 @@
+
 package www.founded.com.service.payment.client_freelancer_contract.impl;
 
 import java.math.BigDecimal;
@@ -244,6 +245,14 @@ public class ContractOfferServiceImpl implements ContractOfferService {
 	            .orElseThrow(() -> new IllegalArgumentException("Offer not found"));
 	    return toViewDTO(offer);
 	}
+
+    @Override
+    public List<ContractOfferViewDTO> getAllOffers() {
+        // Map all ContractOffer entities to ContractOfferViewDTO
+        return offerRepo.findAll().stream()
+            .map(com::toViewDTO)
+            .toList();
+    }
 	
 	private ContractOfferViewDTO toViewDTO(ContractOffer offer) {
 	    ContractOfferViewDTO dto = new ContractOfferViewDTO();
@@ -283,4 +292,5 @@ public class ContractOfferServiceImpl implements ContractOfferService {
 	    
 	    return dto;
 	}
+    
 }

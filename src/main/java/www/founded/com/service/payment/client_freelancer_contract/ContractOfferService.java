@@ -1,3 +1,4 @@
+
 package www.founded.com.service.payment.client_freelancer_contract;
 
 import java.util.List;
@@ -20,4 +21,6 @@ public interface ContractOfferService {
     List<ContractOfferViewDTO> getOffersByClientUserId(Long userId);
     List<ContractOfferViewDTO> getOffersByFreelancerId(Long freelancerId);
     ContractOfferViewDTO getOfferById(Long offerId);
+    // Get all offers for search
+    List<ContractOfferViewDTO> getAllOffers();
 }

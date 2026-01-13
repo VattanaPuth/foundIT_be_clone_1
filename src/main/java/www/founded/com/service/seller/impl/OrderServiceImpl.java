@@ -1,3 +1,4 @@
+
 package www.founded.com.service.seller.impl;
 
 import java.math.BigDecimal;
@@ -162,4 +163,17 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Freelancer not found"));
         return orderRepo.findByFreelancer(freelancer);  // Fetch orders assigned to the freelancer
     }
+
+	@Override
+	public List<Order> searchOrders(String query) {
+		// Simple search: by title or id (customize as needed)
+		List<Order> allOrders = orderRepo.findAll();
+		String q = query.toLowerCase();
+		return allOrders.stream()
+			.filter(order ->
+				(order.getTitle() != null && order.getTitle().toLowerCase().contains(q)) ||
+				(order.getId() != null && order.getId().toString().contains(q))
+			)
+			.toList();
+	}
 }

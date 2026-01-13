@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -61,5 +62,14 @@ public class JobPostController {
         job.setStatus(JobPostStatus.CLOSED);
         jobPostRepo.save(job);
         return ResponseEntity.ok().build();
+    }
+    // Search jobs by query (for global search)
+    @GetMapping("/search")
+    public ResponseEntity<List<JobPost>> searchJobs(@RequestParam("query") String query) {
+        List<JobPost> results = jobPostRepo.findAll().stream()
+            .filter(job -> (job.getTitle() != null && job.getTitle().toLowerCase().contains(query.toLowerCase())) ||
+                          (job.getId() != null && job.getId().toString().contains(query)))
+            .toList();
+        return ResponseEntity.ok(results);
     }
 }
