@@ -250,7 +250,7 @@ public class ContractOfferServiceImpl implements ContractOfferService {
     public List<ContractOfferViewDTO> getAllOffers() {
         // Map all ContractOffer entities to ContractOfferViewDTO
         return offerRepo.findAll().stream()
-            .map(com::toViewDTO)
+            .map(this::toViewDTO)
             .toList();
     }
 	
