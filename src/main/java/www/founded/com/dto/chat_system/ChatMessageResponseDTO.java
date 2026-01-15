@@ -5,7 +5,6 @@ import java.time.DayOfWeek;
 
 import jakarta.persistence.Lob;
 import lombok.Data;
-import www.founded.com.model.chat_system.Recipient;
 
 
 @Data
@@ -13,6 +12,7 @@ public class ChatMessageResponseDTO {
 	private String senderName;
 	private String recipientName;
 	private String contents;
+	private String messageType = "text";
 	private String fileName;
 	private String fileType;
 	@Lob

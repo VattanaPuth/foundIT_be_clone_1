@@ -15,4 +15,13 @@ public interface ChatMessageRepository extends JpaRepository<Message, Long>{
     @Query("SELECT m FROM Message m WHERE (m.senderId.user = :sender AND m.recipientId.user = :recipient) " +
             "OR (m.senderId.user = :recipient AND m.recipientId.user = :sender) ORDER BY m.time ASC")
     List<Message> findMessagesBetween(@Param("sender") UserRegister sender, @Param("recipient") UserRegister recipient);
+
+    @Query("SELECT DISTINCT m FROM Message m WHERE m.senderId.user.id = :userId OR m.recipientId.user.id = :userId " +
+           "ORDER BY m.time DESC")
+    List<Message> findConversationsByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT m FROM Message m WHERE (m.senderId.user.id = :userId AND m.recipientId.user.id = :otherUserId) " +
+           "OR (m.senderId.user.id = :otherUserId AND m.recipientId.user.id = :userId) " +
+           "ORDER BY m.time ASC")
+    List<Message> findMessagesBetweenUsers(@Param("userId") Long userId, @Param("otherUserId") Long otherUserId);
 }

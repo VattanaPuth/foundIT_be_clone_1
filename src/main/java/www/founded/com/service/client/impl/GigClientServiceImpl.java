@@ -211,4 +211,8 @@ public class GigClientServiceImpl implements GigClientService{
         return updated;
     }
 
+    // Get a single public gig by ID
+    public GigClient getPublicGigById(Long id) {
+        return gigRepo.findByIdAndIsPublic(id, true).orElse(null);
+    }
 }

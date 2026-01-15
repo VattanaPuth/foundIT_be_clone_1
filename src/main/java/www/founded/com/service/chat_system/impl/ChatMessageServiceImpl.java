@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,6 +59,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 		message.setRecipientId(recipient);
 		message.setRecipientName(recipientName);
 		message.setContents(messageRequest.getContents());
+		message.setMessageType(messageRequest.getMessageType());
 		message.setDay(LocalDate.now().getDayOfWeek()); 
 		message.setTime(Time.valueOf(LocalTime.now())); 
      	message.setFileName(file != null ? file.getOriginalFilename() : null);
@@ -79,10 +81,11 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 		messageResponse.setSenderName(m.getSenderName());
 		messageResponse.setRecipientName(m.getRecipientName());
 		messageResponse.setContents(m.getContents());
+		messageResponse.setMessageType(m.getMessageType());
 		messageResponse.setDay(LocalDate.now().getDayOfWeek());
 		messageResponse.setTime(Time.valueOf(LocalTime.now()));
 		
-	    if (m != null && m.getFileData().length > 0) {
+	    if (m != null && m.getFileData() != null && m.getFileData().length > 0) {
 	    	messageResponse.setFileName(m.getFileName());
 	    	messageResponse.setFileType(m.getFileType());
 	        messageResponse.setFileData(m.getFileData());
@@ -98,24 +101,55 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	@Transactional
 	@Override
 	public Message sendMessage(Long senderId, Long recipientId, String messageContent) {
-		 Sender sender = senderRepo.findById(senderId)
-	                .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
+		return sendMessage(senderId, recipientId, messageContent, "text");
+	}
 
-	     Recipient recipient = recipientRepo.findById(recipientId)
-	                .orElseThrow(() -> new IllegalArgumentException("Recipient not found"));
+	@Transactional
+	public Message sendMessage(Long senderId, Long recipientId, String messageContent, String messageType) {
+		UserRegister senderUser = userRegisterRepository.findById(senderId)
+			.orElseThrow(() -> new IllegalArgumentException("Sender not found"));
+		UserRegister recipientUser = userRegisterRepository.findById(recipientId)
+			.orElseThrow(() -> new IllegalArgumentException("Recipient not found"));
+
+		Sender sender = senderRepo.findByUser(senderUser)
+			.orElseGet(() -> {
+				Sender newSender = new Sender();
+				newSender.setUser(senderUser);
+				newSender.setSenderName(senderUser.getUsername());
+				newSender.setRole(senderUser.getRole());
+				newSender.setEmail(senderUser.getEmail());
+				return senderRepo.save(newSender);
+			});
+
+		Recipient recipient = recipientRepo.findByUser(recipientUser)
+			.orElseGet(() -> {
+				Recipient newRecipient = new Recipient();
+				newRecipient.setUser(recipientUser);
+				newRecipient.setRecipientName(recipientUser.getUsername());
+				newRecipient.setRole(recipientUser.getRole());
+				newRecipient.setEmail(recipientUser.getEmail());
+				return recipientRepo.save(newRecipient);
+			});
 
 	        Message message = new Message();
 	        message.setSenderId(sender);
+	        message.setSenderName(sender.getSenderName());
 	        message.setRecipientId(recipient);
+	        message.setRecipientName(recipient.getRecipientName());
 	        message.setContents(messageContent);
+	        message.setMessageType(messageType);
 	        message.setDay(LocalDate.now().getDayOfWeek());
 	        message.setTime(Time.valueOf(LocalTime.now()));
+	        message.setFileData(null);
+	        message.setFileName(null);
+	        message.setFileType(null);
+	        message.setRead(false);
 
-	        chatRepo.save(message);
+	        Message saved = chatRepo.save(message);
 
 	        // Trigger the notification once the message is sent
 	        notificationService.sendMessageNotification(sender, recipient, messageContent);
-	    return message;    
+	    return saved;    
 	}
 
 	@Transactional
@@ -127,4 +161,18 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	        message.setRead(true);
 	        chatRepo.save(message);
 	    }
+
+	@Override
+	public List<Message> getUserConversations(String userEmailOrUsername) {
+		UserRegister user = userRegisterRepository.findByUsernameOrEmail(userEmailOrUsername)
+			.orElseThrow(() -> new RuntimeException("User not found"));
+		return chatRepo.findConversationsByUserId(user.getId());
+	}
+
+	@Override
+	public List<Message> getMessagesBetweenUsers(String userEmailOrUsername, Long otherUserId) {
+		UserRegister user = userRegisterRepository.findByUsernameOrEmail(userEmailOrUsername)
+			.orElseThrow(() -> new RuntimeException("User not found"));
+		return chatRepo.findMessagesBetweenUsers(user.getId(), otherUserId);
+	}
 }

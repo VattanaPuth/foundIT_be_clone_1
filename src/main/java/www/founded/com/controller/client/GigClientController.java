@@ -108,4 +108,14 @@ public class GigClientController {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
+
+    // Get a single public gig by ID
+    @GetMapping("/public/{id}")
+    public ResponseEntity<GigClient> getPublicGigById(@PathVariable Long id) {
+        GigClient gig = gigService.getPublicGigById(id);
+        if (gig == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(gig);
+    }
 }

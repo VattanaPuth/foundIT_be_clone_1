@@ -11,6 +11,7 @@ public class ChatMessageRequestDTO {
 	private String recipientName;
 	private String senderName;
 	private String contents;
+	private String messageType = "text";
 	private String fileName;
 	private String fileType;
 	@Lob

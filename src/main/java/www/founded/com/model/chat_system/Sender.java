@@ -18,18 +18,19 @@ import www.founded.com.model.register.UserRegister;
 @Table(name = "sender")
 @Data
 public class Sender {
-	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "pk_sender_id")
 	private Long id;
-	
+
 	@ManyToOne
-    @JoinColumn(name = "user_id")  
-    private UserRegister user; 
-	
+	@JoinColumn(name = "user_id")
+	private UserRegister user;
+
 	private String senderName;
-	
+
+	private String email;
+
 	@Enumerated(EnumType.STRING)
-    private Role role;
+	private Role role;
 }

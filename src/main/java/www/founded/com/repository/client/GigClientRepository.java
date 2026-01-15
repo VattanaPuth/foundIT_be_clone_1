@@ -17,4 +17,7 @@ public interface GigClientRepository extends JpaRepository<GigClient, Long> {
     
     // Find gigs posted by a specific user
     Page<GigClient> findByPostedBy(String postedBy, Pageable pageable);
+
+    // Find a public gig by ID
+    java.util.Optional<GigClient> findByIdAndIsPublic(Long id, boolean isPublic);
 }
