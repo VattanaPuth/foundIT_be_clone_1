@@ -14,13 +14,17 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import www.founded.com.dto.chat_system.ChatMessageRequestDTO;
 import www.founded.com.dto.chat_system.ChatMessageResponseDTO;
+import www.founded.com.dto.chat_system.ProposalActionDTO;
+import www.founded.com.enum_.client_freelancer_contract.ContractOfferStatus;
 import www.founded.com.model.chat_system.Message;
 import www.founded.com.model.chat_system.Recipient;
 import www.founded.com.model.chat_system.Sender;
+import www.founded.com.model.payment.client_freelancer_contract.ContractOffer;
 import www.founded.com.model.register.UserRegister;
 import www.founded.com.repository.chat_system.ChatMessageRepository;
 import www.founded.com.repository.chat_system.RecipientRepository;
 import www.founded.com.repository.chat_system.SenderRepository;
+import www.founded.com.repository.client_freelancer_contract.ContractOfferRepository;
 import www.founded.com.repository.register.UserRegisterRepository;
 import www.founded.com.service.chat_system.ChatMessageService;
 import www.founded.com.service.notification.NotificationService;
@@ -35,6 +39,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	private final NotificationService notificationService;
 	private final SenderRepository senderRepo;
 	private final RecipientRepository recipientRepo;
+	private final ContractOfferRepository contractOfferRepository;
 
 	@Transactional
 	@Override
@@ -188,5 +193,25 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 		List<Message> messages = chatRepo.findMessagesBetweenUsers(user.getId(), otherUserId);
 		System.out.println("[DEBUG] getMessagesBetweenUsers: userId=" + user.getId() + ", otherUserId=" + otherUserId + ", found messages=" + messages.size());
 		return messages;
+	}
+
+	@Transactional
+	@Override
+	public void handleProposalAction(ProposalActionDTO action) {
+		ContractOffer offer = contractOfferRepository.findById(action.getProposalId())
+			.orElseThrow(() -> new RuntimeException("Proposal not found: " + action.getProposalId()));
+
+		if ("accept".equals(action.getAction())) {
+			offer.setStatus(ContractOfferStatus.ACCEPTED);
+			offer.setAcceptedAt(java.time.Instant.now());
+		} else if ("decline".equals(action.getAction())) {
+			offer.setStatus(ContractOfferStatus.REJECTED);
+			offer.setRejectedAt(java.time.Instant.now());
+		} else {
+			throw new IllegalArgumentException("Invalid action: " + action.getAction());
+		}
+
+		contractOfferRepository.save(offer);
+		System.out.println("[DEBUG] handleProposalAction: proposalId=" + action.getProposalId() + ", action=" + action.getAction() + ", status=" + offer.getStatus());
 	}
 }

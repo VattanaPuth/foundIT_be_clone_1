@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import www.founded.com.dto.chat_system.CallSignalDTO;
 import www.founded.com.dto.chat_system.ChatMessageRequestDTO;
 import www.founded.com.dto.chat_system.ChatMessageResponseDTO;
+import www.founded.com.dto.chat_system.ProposalActionDTO;
 import www.founded.com.dto.chat_system.WebSocketClientRequestDTO;
 import www.founded.com.dto.chat_system.WebSocketServerResponseDTO;
 import www.founded.com.service.chat_system.ChatMessageService;
@@ -46,13 +47,13 @@ public class ChatWebSocket extends TextWebSocket{
     }
     
     //connection
-	@Override
-	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-		String userId = getUserId(session);
-		userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet())
-					.add(session);
-		
-	}
+    @Override
+    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        String userId = getUserId(session);
+        System.out.println("[DEBUG] afterConnectionEstablished: userId=" + userId + ", sessionId=" + session.getId());
+        userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet())
+                    .add(session);
+    }
     
     //connection closed
 	@Override
@@ -77,6 +78,9 @@ public class ChatWebSocket extends TextWebSocket{
                 break;
             case "CALL":
                 handleCallSignal(session, event);
+                break;
+            case "proposal_action":
+                handleProposalAction(session, event);
                 break;
             default:
                 sendError(session, "Unknown event type: " + event.getType());
@@ -178,6 +182,34 @@ public class ChatWebSocket extends TextWebSocket{
         session.sendMessage(new TextMessage(mapper.writeValueAsString(error)));
         // TextMessage belong to WebSocketMessage
     }
+
+	//handleProposalAction
+	private void handleProposalAction(WebSocketSession session, WebSocketClientRequestDTO event) throws Exception {
+		ProposalActionDTO action = mapper.readValue(event.getPayload(), ProposalActionDTO.class);
+
+		String senderIdStr = getUserId(session);
+		Long senderId;
+		try {
+			senderId = Long.parseLong(senderIdStr);
+		} catch (NumberFormatException e) {
+			sendError(session, "Invalid senderId: " + senderIdStr);
+			return;
+		}
+
+		System.out.println("[DEBUG] handleProposalAction: senderId=" + senderId + ", proposalId=" + action.getProposalId() + ", action=" + action.getAction());
+
+		chatService.handleProposalAction(action);
+
+		// Broadcast the action result to both users
+		WebSocketServerResponseDTO<ProposalActionDTO> serverEvent = new WebSocketServerResponseDTO<>("PROPOSAL_ACTION_RESULT", action);
+		String json = mapper.writeValueAsString(serverEvent);
+
+		sendToUser(String.valueOf(senderId), json);
+		// Assuming gigId is the other user id, send to them too
+		if (action.getGigId() != null) {
+			sendToUser(action.getGigId(), json);
+		}
+	}
 
 
 }

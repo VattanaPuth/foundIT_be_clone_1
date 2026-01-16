@@ -44,20 +44,20 @@ public class SecurityConfig{
 		jwtLoginFilter.setFilterProcessesUrl("/login");
 		
 		return http
-				.cors(cors -> cors.configurationSource(corsConfigurationSource))
-				.csrf(csrf -> csrf.disable())
-				.addFilter(jwtLoginFilter)
-				.addFilterAfter(new JwtVerifyFilter(), JwtLoginFilter.class)
-				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
-				.authorizeHttpRequests(rq -> rq
-				  .requestMatchers("/", "/login**", "/oauth2/**", "/css/**", "/js/**").permitAll()
-					  .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
-					  .requestMatchers(HttpMethod.POST, "/login", "/api/login", "/api/login/email", "/api/check-auth", "/register", "/register/**").permitAll()				  
-					  .requestMatchers(HttpMethod.PUT, "/api/user/update-role").authenticated()			          
-					  .requestMatchers(HttpMethod.POST, "/chat/**").hasAnyRole(Role.CLIENT.name(), Role.FREELANCER.name(), Role.SELLER.name())
-					  .requestMatchers(HttpMethod.GET, "/chat", "/chat/**").permitAll()
-					  .requestMatchers(HttpMethod.POST, "/ekyc/**").hasAnyRole(Role.CLIENT.name(), Role.FREELANCER.name(), Role.SELLER.name())
-					  .requestMatchers(HttpMethod.GET,"/gigs/**").hasAuthority(Permission.READ_GIG.getDescripton())
+			.cors(cors -> cors.configurationSource(corsConfigurationSource))
+			.csrf(csrf -> csrf.disable())
+			.addFilter(jwtLoginFilter)
+			.addFilterAfter(new JwtVerifyFilter(), JwtLoginFilter.class)
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+			.authorizeHttpRequests(rq -> rq
+			  .requestMatchers("/", "/login**", "/oauth2/**", "/css/**", "/js/**").permitAll()
+			      .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
+			      .requestMatchers(HttpMethod.POST, "/login", "/api/login", "/api/login/email", "/api/check-auth", "/register", "/register/**").permitAll()                 
+			      .requestMatchers(HttpMethod.PUT, "/api/user/update-role").authenticated()                        
+			      // Allow all WebSocket upgrade requests to /chat and /chat/**
+			      .requestMatchers("/chat", "/chat/**").permitAll()
+			      .requestMatchers(HttpMethod.POST, "/ekyc/**").hasAnyRole(Role.CLIENT.name(), Role.FREELANCER.name(), Role.SELLER.name())
+			      .requestMatchers(HttpMethod.GET,"/gigs/**").hasAuthority(Permission.READ_GIG.getDescripton())
 					  .requestMatchers(HttpMethod.POST,"/gigs/**").hasAuthority(Permission.CREATE_GIG.getDescripton())
 					  .requestMatchers(HttpMethod.PUT, "/gigs/**").hasAuthority(Permission.UPDATE_GIG.getDescripton())
 					  .requestMatchers(HttpMethod.DELETE, "/gigs/**").hasAuthority(Permission.DELETE_GIG.getDescripton())

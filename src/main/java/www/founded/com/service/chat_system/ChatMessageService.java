@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import www.founded.com.dto.chat_system.ChatMessageRequestDTO;
 import www.founded.com.dto.chat_system.ChatMessageResponseDTO;
+import www.founded.com.dto.chat_system.ProposalActionDTO;
 import www.founded.com.model.chat_system.Message;
 
 public interface ChatMessageService {
@@ -16,4 +17,5 @@ public interface ChatMessageService {
     void markMessageAsRead(Long messageId);
     List<Message> getUserConversations(String userEmail);
     List<Message> getMessagesBetweenUsers(String userEmail, Long otherUserId);
+    void handleProposalAction(ProposalActionDTO action);
 }
