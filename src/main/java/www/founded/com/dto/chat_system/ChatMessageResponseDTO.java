@@ -11,6 +11,8 @@ import lombok.Data;
 public class ChatMessageResponseDTO {
 	private String senderName;
 	private String recipientName;
+	private Long senderId;
+	private Long recipientId;
 	private String contents;
 	private String messageType = "text";
 	private String fileName;
@@ -19,6 +21,6 @@ public class ChatMessageResponseDTO {
 	private byte[] fileData;
 	private DayOfWeek day;
 	private Time time;
-	
+    
 	private Long gigId;
 }

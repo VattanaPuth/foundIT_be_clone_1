@@ -72,6 +72,12 @@ public class ChatWebSocket extends TextWebSocket{
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         WebSocketClientRequestDTO event = mapper.readValue(message.getPayload(), WebSocketClientRequestDTO.class);
+        // Always convert payload to string for downstream deserialization
+        Object payloadObj = event.getPayload();
+        String payloadStr = (payloadObj instanceof String)
+            ? (String) payloadObj
+            : mapper.writeValueAsString(payloadObj);
+        event.setPayload(payloadStr);
         switch (event.getType()) {
             case "MESSAGE":
                 handleSendMessage(session, event);
@@ -89,9 +95,30 @@ public class ChatWebSocket extends TextWebSocket{
 	
 	//handleSendMessage
     private void handleSendMessage(WebSocketSession session, WebSocketClientRequestDTO event) throws Exception {
-        ChatMessageRequestDTO req = mapper.readValue(event.getPayload(), ChatMessageRequestDTO.class);
 
-        String senderIdStr = getUserId(session);
+        ChatMessageRequestDTO req = mapper.readValue(
+            event.getPayload() instanceof String ? (String) event.getPayload() : mapper.writeValueAsString(event.getPayload()),
+            ChatMessageRequestDTO.class
+        );
+
+        // Accept senderId, senderName, recipientId, recipientName from payload if present, else fallback
+        String senderIdStr = null;
+        String recipientIdStr = null;
+        String senderName = req.getSenderName();
+        String recipientName = req.getRecipientName();
+        try {
+            java.util.Map<String, Object> payloadMap = mapper.readValue(
+                event.getPayload() instanceof String ? (String) event.getPayload() : mapper.writeValueAsString(event.getPayload()),
+                java.util.Map.class
+            );
+            if (payloadMap.get("senderId") != null) senderIdStr = String.valueOf(payloadMap.get("senderId"));
+            if (payloadMap.get("recipientId") != null) recipientIdStr = String.valueOf(payloadMap.get("recipientId"));
+            if (payloadMap.get("senderName") != null) senderName = String.valueOf(payloadMap.get("senderName"));
+            if (payloadMap.get("recipientName") != null) recipientName = String.valueOf(payloadMap.get("recipientName"));
+        } catch (Exception ignore) {}
+        if (senderIdStr == null) senderIdStr = getUserId(session);
+        if (recipientIdStr == null && recipientName != null) recipientIdStr = recipientName;
+
         Long senderId;
         try {
             senderId = Long.parseLong(senderIdStr);
@@ -100,16 +127,16 @@ public class ChatWebSocket extends TextWebSocket{
             return;
         }
 
-        if (req.getRecipientName() == null) {
+        if (recipientIdStr == null) {
             sendError(session, "recipientId is required for direct chat");
             return;
         }
 
         Long recipientId;
         try {
-            recipientId = Long.parseLong(req.getRecipientName());
+            recipientId = Long.parseLong(recipientIdStr);
         } catch (NumberFormatException e) {
-            sendError(session, "Invalid recipientId: " + req.getRecipientName());
+            sendError(session, "Invalid recipientId: " + recipientIdStr);
             return;
         }
 

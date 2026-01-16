@@ -90,22 +90,22 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 		ChatMessageResponseDTO messageResponse = new ChatMessageResponseDTO();
 		messageResponse.setSenderName(m.getSenderName());
 		messageResponse.setRecipientName(m.getRecipientName());
+		messageResponse.setSenderId(m.getSenderId() != null && m.getSenderId().getUser() != null ? m.getSenderId().getUser().getId() : null);
+		messageResponse.setRecipientId(m.getRecipientId() != null && m.getRecipientId().getUser() != null ? m.getRecipientId().getUser().getId() : null);
 		messageResponse.setContents(m.getContents());
 		messageResponse.setMessageType(m.getMessageType());
 		messageResponse.setDay(LocalDate.now().getDayOfWeek());
 		messageResponse.setTime(Time.valueOf(LocalTime.now()));
 		messageResponse.setGigId(m.getGigId());
-		
-	    if (m != null && m.getFileData() != null && m.getFileData().length > 0) {
-	    	messageResponse.setFileName(m.getFileName());
-	    	messageResponse.setFileType(m.getFileType());
-	        messageResponse.setFileData(m.getFileData());
-	    } else {
-	    	messageResponse.setFileData(null);
-	    	messageResponse.setFileName(null);
-	    	messageResponse.setFileType(null);
-	    }
-		
+		if (m != null && m.getFileData() != null && m.getFileData().length > 0) {
+			messageResponse.setFileName(m.getFileName());
+			messageResponse.setFileType(m.getFileType());
+			messageResponse.setFileData(m.getFileData());
+		} else {
+			messageResponse.setFileData(null);
+			messageResponse.setFileName(null);
+			messageResponse.setFileType(null);
+		}
 		return messageResponse;
 	}
 

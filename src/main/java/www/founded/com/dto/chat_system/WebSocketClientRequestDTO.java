@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class WebSocketClientRequestDTO {
     private String type;
-    private String payload;
+    private Object payload;
 }
