@@ -18,4 +18,6 @@ public class ChatMessageRequestDTO {
 	private byte[] fileData;
 	private DayOfWeek day;
 	private Time time;
+	
+	private Long gigId;
 }

@@ -68,55 +68,67 @@ public class ChatWebSocket extends TextWebSocket{
 		}
 	}
 	
-	//handletextMessage
-	public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-		WebSocketClientRequestDTO event = mapper.readValue(message.getPayload(), WebSocketClientRequestDTO.class);
-
-		switch (event.getType()) {
-        case "MESSAGE":
-            handleSendMessage(session, event);
-            break;
-        case "CALL":
-            handleCallSignal(session, event);
-            break;
-        default:
-            sendError(session, "Unknown event type: " + event.getType());
-		}
-	}
+    @Override
+    public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        WebSocketClientRequestDTO event = mapper.readValue(message.getPayload(), WebSocketClientRequestDTO.class);
+        switch (event.getType()) {
+            case "MESSAGE":
+                handleSendMessage(session, event);
+                break;
+            case "CALL":
+                handleCallSignal(session, event);
+                break;
+            default:
+                sendError(session, "Unknown event type: " + event.getType());
+        }
+    }
 	
 	//handleSendMessage
-	private void handleSendMessage(WebSocketSession session, WebSocketClientRequestDTO event) throws Exception {
+    private void handleSendMessage(WebSocketSession session, WebSocketClientRequestDTO event) throws Exception {
         ChatMessageRequestDTO req = mapper.readValue(event.getPayload(), ChatMessageRequestDTO.class);
 
-        String senderId   = getUserId(session);
-        String senderName = senderId;
-        
+        String senderIdStr = getUserId(session);
+        Long senderId;
+        try {
+            senderId = Long.parseLong(senderIdStr);
+        } catch (NumberFormatException e) {
+            sendError(session, "Invalid senderId: " + senderIdStr);
+            return;
+        }
+
         if (req.getRecipientName() == null) {
             sendError(session, "recipientId is required for direct chat");
             return;
         }
-        
-        String recipientName = req.getRecipientName();
-        
+
+        Long recipientId;
+        try {
+            recipientId = Long.parseLong(req.getRecipientName());
+        } catch (NumberFormatException e) {
+            sendError(session, "Invalid recipientId: " + req.getRecipientName());
+            return;
+        }
+
+        System.out.println("[DEBUG] handleSendMessage: senderId=" + senderId + ", recipientId=" + recipientId + ", contents='" + req.getContents() + "'");
+
         byte[] fileData = req.getFileData(); 
         String fileName = req.getFileName();
         String fileType = req.getFileType();
-        
+
         MultipartFile file = null;
         if (fileData != null && fileData.length > 0) {
-        	file = new MockMultipartFile(fileName, fileName, fileType, fileData);
+            file = new MockMultipartFile(fileName, fileName, fileType, fileData);
         }
-        
-        ChatMessageResponseDTO saved = chatService.sendMessage(senderName, recipientName, req, file);
+
+        ChatMessageResponseDTO saved = chatService.sendMessage(senderId, recipientId, req, file);
 
         WebSocketServerResponseDTO<ChatMessageResponseDTO> serverEvent = new WebSocketServerResponseDTO<>("MESSAGE", saved);
         String json = mapper.writeValueAsString(serverEvent);
 
-        sendToUser(saved.getSenderName(), json);
-        if (!saved.getRecipientName().equals(saved.getSenderName())) {
-            sendToUser(saved.getRecipientName(), json);
+        sendToUser(String.valueOf(senderId), json);
+        if (!recipientId.equals(senderId)) {
+            sendToUser(String.valueOf(recipientId), json);
         }
-        
     }
 
 	//handleCallSignal

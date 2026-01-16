@@ -52,7 +52,10 @@ public class SecurityConfig{
 				.authorizeHttpRequests(rq -> rq
 				  .requestMatchers("/", "/login**", "/oauth2/**", "/css/**", "/js/**").permitAll()
 					  .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
-					  .requestMatchers(HttpMethod.POST, "/login", "/api/login", "/api/login/email", "/api/check-auth", "/register", "/register/**").permitAll()				  .requestMatchers(HttpMethod.PUT, "/api/user/update-role").authenticated()			          .requestMatchers(HttpMethod.POST, "/chat/**").hasAnyRole(Role.CLIENT.name(), Role.FREELANCER.name(), Role.SELLER.name())
+					  .requestMatchers(HttpMethod.POST, "/login", "/api/login", "/api/login/email", "/api/check-auth", "/register", "/register/**").permitAll()				  
+					  .requestMatchers(HttpMethod.PUT, "/api/user/update-role").authenticated()			          
+					  .requestMatchers(HttpMethod.POST, "/chat/**").hasAnyRole(Role.CLIENT.name(), Role.FREELANCER.name(), Role.SELLER.name())
+					  .requestMatchers(HttpMethod.GET, "/chat", "/chat/**").permitAll()
 					  .requestMatchers(HttpMethod.POST, "/ekyc/**").hasAnyRole(Role.CLIENT.name(), Role.FREELANCER.name(), Role.SELLER.name())
 					  .requestMatchers(HttpMethod.GET,"/gigs/**").hasAuthority(Permission.READ_GIG.getDescripton())
 					  .requestMatchers(HttpMethod.POST,"/gigs/**").hasAuthority(Permission.CREATE_GIG.getDescripton())

@@ -19,4 +19,6 @@ public class ChatMessageResponseDTO {
 	private byte[] fileData;
 	private DayOfWeek day;
 	private Time time;
+	
+	private Long gigId;
 }

@@ -47,4 +47,7 @@ public class Message {
 	private byte[] fileData;
 	
 	private Boolean read = false;
+	
+	// Link chat to gig if relevant
+	private Long gigId;
 }

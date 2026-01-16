@@ -38,38 +38,43 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
 	@Transactional
 	@Override
-	public ChatMessageResponseDTO sendMessage(String senderUsername, String recipientName, ChatMessageRequestDTO messageRequest, MultipartFile file)  {
-		
-		UserRegister senderUserId = userRegisterRepository.findByUsername(senderUsername)
-			.orElseThrow(() -> new RuntimeException("Sender not found: " + senderUsername));
-	    UserRegister recipientUserId = userRegisterRepository.findByUsername(messageRequest.getRecipientName())
-	    	.orElseThrow(() -> new RuntimeException("Recipient not found: " + messageRequest.getRecipientName()));
-		
-	    Sender sender = new Sender();
-	    sender.setUser(senderUserId);
-	    sender.setSenderName(senderUsername);
-	    
-	    Recipient recipient = new Recipient();
-	    recipient.setUser(recipientUserId);
-	    recipient.setRecipientName(recipientName);
-	    
+	public ChatMessageResponseDTO sendMessage(Long senderId, Long recipientId, ChatMessageRequestDTO messageRequest, MultipartFile file)  {
+		if (senderId.equals(recipientId)) {
+			System.out.println("[WARN] Attempted to send message to self. senderId=" + senderId);
+			throw new IllegalArgumentException("Cannot send message to yourself.");
+		}
+		UserRegister senderUser = userRegisterRepository.findById(senderId)
+			.orElseThrow(() -> new RuntimeException("Sender not found: " + senderId));
+		UserRegister recipientUser = userRegisterRepository.findById(recipientId)
+			.orElseThrow(() -> new RuntimeException("Recipient not found: " + recipientId));
+
+		Sender sender = new Sender();
+		sender.setUser(senderUser);
+		sender.setSenderName(senderUser.getUsername());
+
+		Recipient recipient = new Recipient();
+		recipient.setUser(recipientUser);
+		recipient.setRecipientName(recipientUser.getUsername());
+
 		Message message = new Message();
-		message.setSenderId(sender);	
-		message.setSenderName(senderUsername);
+		message.setSenderId(sender);
+		message.setSenderName(senderUser.getUsername());
 		message.setRecipientId(recipient);
-		message.setRecipientName(recipientName);
+		message.setRecipientName(recipientUser.getUsername());
 		message.setContents(messageRequest.getContents());
 		message.setMessageType(messageRequest.getMessageType());
-		message.setDay(LocalDate.now().getDayOfWeek()); 
-		message.setTime(Time.valueOf(LocalTime.now())); 
-     	message.setFileName(file != null ? file.getOriginalFilename() : null);
-	    message.setFileType(file != null ? file.getContentType() : null);
-	    try {
+		message.setDay(LocalDate.now().getDayOfWeek());
+		message.setTime(Time.valueOf(LocalTime.now()));
+		message.setFileName(file != null ? file.getOriginalFilename() : null);
+		message.setFileType(file != null ? file.getContentType() : null);
+		try {
 			message.setFileData(file != null ? file.getBytes() : null);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+		// Set gigId if present in request
+		message.setGigId(messageRequest.getGigId());
+
 		Message saved = chatRepo.save(message);
 		return toResponse(saved);
 	}
@@ -84,6 +89,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 		messageResponse.setMessageType(m.getMessageType());
 		messageResponse.setDay(LocalDate.now().getDayOfWeek());
 		messageResponse.setTime(Time.valueOf(LocalTime.now()));
+		messageResponse.setGigId(m.getGigId());
 		
 	    if (m != null && m.getFileData() != null && m.getFileData().length > 0) {
 	    	messageResponse.setFileName(m.getFileName());
@@ -145,9 +151,15 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	        message.setFileType(null);
 	        message.setRead(false);
 
-	        Message saved = chatRepo.save(message);
-
-	        // Trigger the notification once the message is sent
+			// Save sender and recipient if new
+			Sender savedSender = senderRepo.save(sender);
+			Recipient savedRecipient = recipientRepo.save(recipient);
+			Message saved = chatRepo.save(message);
+			System.out.println("[DEBUG] sendMessage: saved messageId=" + saved.getId()
+				+ ", senderId=" + savedSender.getUser().getId() + ", senderDbId=" + savedSender.getId()
+				+ ", recipientId=" + savedRecipient.getUser().getId() + ", recipientDbId=" + savedRecipient.getId()
+				+ ", contents='" + messageContent + "'");
+			// Trigger the notification once the message is sent
 	        notificationService.sendMessageNotification(sender, recipient, messageContent);
 	    return saved;    
 	}
@@ -173,6 +185,8 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	public List<Message> getMessagesBetweenUsers(String userEmailOrUsername, Long otherUserId) {
 		UserRegister user = userRegisterRepository.findByUsernameOrEmail(userEmailOrUsername)
 			.orElseThrow(() -> new RuntimeException("User not found"));
-		return chatRepo.findMessagesBetweenUsers(user.getId(), otherUserId);
+		List<Message> messages = chatRepo.findMessagesBetweenUsers(user.getId(), otherUserId);
+		System.out.println("[DEBUG] getMessagesBetweenUsers: userId=" + user.getId() + ", otherUserId=" + otherUserId + ", found messages=" + messages.size());
+		return messages;
 	}
 }

@@ -9,11 +9,11 @@ import www.founded.com.dto.chat_system.ChatMessageResponseDTO;
 import www.founded.com.model.chat_system.Message;
 
 public interface ChatMessageService {
-	ChatMessageResponseDTO sendMessage(String senderId, String recipientId , ChatMessageRequestDTO messageRequest, MultipartFile file);
-	ChatMessageResponseDTO toResponse(Message m);
-	Message sendMessage(Long senderId, Long recipientId, String messageContent);
-	Message sendMessage(Long senderId, Long recipientId, String messageContent, String messageType);
-	void markMessageAsRead(Long messageId);
-	List<Message> getUserConversations(String userEmail);
-	List<Message> getMessagesBetweenUsers(String userEmail, Long otherUserId);
+    ChatMessageResponseDTO sendMessage(Long senderId, Long recipientId, ChatMessageRequestDTO messageRequest, MultipartFile file);
+    ChatMessageResponseDTO toResponse(Message m);
+    Message sendMessage(Long senderId, Long recipientId, String messageContent);
+    Message sendMessage(Long senderId, Long recipientId, String messageContent, String messageType);
+    void markMessageAsRead(Long messageId);
+    List<Message> getUserConversations(String userEmail);
+    List<Message> getMessagesBetweenUsers(String userEmail, Long otherUserId);
 }

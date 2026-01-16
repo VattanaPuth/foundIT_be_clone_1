@@ -29,20 +29,17 @@ public class ChatController {
 
     @PostMapping("/sendMessage")
     public ResponseEntity<ChatMessageResponseDTO> sendMessage(
-            @RequestParam("senderName") String senderName,  // Use String for sender
-            @RequestParam("recipientName") String recipientName,  // Use String for recipient
+            @RequestParam("senderId") Long senderId,
+            @RequestParam("recipientId") Long recipientId,
             @RequestParam("contents") String contents,
-            @RequestParam(value = "file", required = false) MultipartFile file) {  // File is optional
+            @RequestParam(value = "file", required = false) MultipartFile file) {
 
-        // Create the ChatMessageRequestDTO with the text data
         ChatMessageRequestDTO messageRequest = new ChatMessageRequestDTO();
-        messageRequest.setSenderName(senderName);  // Set sender name
-        messageRequest.setRecipientName(recipientName);  // Set recipient name
-        messageRequest.setContents(contents);  // Set message contents
+        messageRequest.setSenderName(String.valueOf(senderId));
+        messageRequest.setRecipientName(String.valueOf(recipientId));
+        messageRequest.setContents(contents);
 
-        // Check if file is uploaded
         if (file != null && !file.isEmpty()) {
-            // Handle file data if provided
             try {
                 messageRequest.setFileData(file.getBytes());
                 messageRequest.setFileName(file.getOriginalFilename());
@@ -52,9 +49,7 @@ public class ChatController {
             }
         }
 
-        // Call the service method to handle sending the message
-        ChatMessageResponseDTO response = chatMessageService.sendMessage(senderName, recipientName, messageRequest, file);
-
+        ChatMessageResponseDTO response = chatMessageService.sendMessage(senderId, recipientId, messageRequest, file);
         return ResponseEntity.ok(response);
     }
     
