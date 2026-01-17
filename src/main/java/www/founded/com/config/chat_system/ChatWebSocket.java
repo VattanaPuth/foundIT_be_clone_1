@@ -78,18 +78,15 @@ public class ChatWebSocket extends TextWebSocket{
             ? (String) payloadObj
             : mapper.writeValueAsString(payloadObj);
         event.setPayload(payloadStr);
-        switch (event.getType()) {
-            case "MESSAGE":
-                handleSendMessage(session, event);
-                break;
-            case "CALL":
-                handleCallSignal(session, event);
-                break;
-            case "proposal_action":
-                handleProposalAction(session, event);
-                break;
-            default:
-                sendError(session, "Unknown event type: " + event.getType());
+        String eventType = event.getType();
+        if ("MESSAGE".equalsIgnoreCase(eventType)) {
+            handleSendMessage(session, event);
+        } else if ("CALL".equalsIgnoreCase(eventType)) {
+            handleCallSignal(session, event);
+        } else if ("PROPOSAL_ACTION".equalsIgnoreCase(eventType) || "proposal_action".equalsIgnoreCase(eventType)) {
+            handleProposalAction(session, event);
+        } else {
+            sendError(session, "Unknown event type: " + eventType);
         }
     }
 	
@@ -166,7 +163,10 @@ public class ChatWebSocket extends TextWebSocket{
 	private void handleCallSignal(WebSocketSession session, WebSocketClientRequestDTO event) throws Exception {
 		//serialize data, from object into bytes
 		// readValue == read data from the byte of payload or json of CallSignalDTO and convert into object ==> deserialize
-        CallSignalDTO signal = mapper.readValue(event.getPayload(), CallSignalDTO.class);
+        String payloadStr = (event.getPayload() instanceof String)
+            ? (String) event.getPayload()
+            : mapper.writeValueAsString(event.getPayload());
+        CallSignalDTO signal = mapper.readValue(payloadStr, CallSignalDTO.class);
 
         // trust server-side userId
         signal.setFromUserId(getUserId(session));
@@ -212,7 +212,12 @@ public class ChatWebSocket extends TextWebSocket{
 
 	//handleProposalAction
 	private void handleProposalAction(WebSocketSession session, WebSocketClientRequestDTO event) throws Exception {
-		ProposalActionDTO action = mapper.readValue(event.getPayload(), ProposalActionDTO.class);
+        String payloadStr = (event.getPayload() instanceof String)
+            ? (String) event.getPayload()
+            : mapper.writeValueAsString(event.getPayload());
+        System.out.println("[DEBUG] handleProposalAction: Incoming payloadStr=" + payloadStr);
+        ProposalActionDTO action = mapper.readValue(payloadStr, ProposalActionDTO.class);
+        System.out.println("[DEBUG] ChatWebSocket: Received proposal action: " + action);
 
 		String senderIdStr = getUserId(session);
 		Long senderId;
@@ -225,7 +230,9 @@ public class ChatWebSocket extends TextWebSocket{
 
 		System.out.println("[DEBUG] handleProposalAction: senderId=" + senderId + ", proposalId=" + action.getProposalId() + ", action=" + action.getAction());
 
-		chatService.handleProposalAction(action);
+        System.out.println("[DEBUG] ChatWebSocket: Calling chatService.handleProposalAction with action=" + action.getAction() + ", proposalId=" + action.getProposalId());
+        chatService.handleProposalAction(action);
+        System.out.println("[DEBUG] ChatWebSocket: Finished chatService.handleProposalAction");
 
 		// Broadcast the action result to both users
 		WebSocketServerResponseDTO<ProposalActionDTO> serverEvent = new WebSocketServerResponseDTO<>("PROPOSAL_ACTION_RESULT", action);

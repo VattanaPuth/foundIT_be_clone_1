@@ -26,6 +26,8 @@ import www.founded.com.service.chat_system.ChatMessageService;
 @CrossOrigin(origins = "http://localhost:3000")
 public class ChatController {
     private final ChatMessageService chatMessageService;
+    private final www.founded.com.repository.client.ClientRepository clientRepository;
+    private final www.founded.com.repository.freelancer.FreelancerRepository freelancerRepository;
 
     @PostMapping("/sendMessage")
     public ResponseEntity<ChatMessageResponseDTO> sendMessage(
@@ -71,25 +73,47 @@ public class ChatController {
             @RequestParam String rate,
             @RequestParam String deliveryTime) {
 
-        String contents = "Proposal: " + coverLetter + " | Rate: " + rate + " | Delivery: " + deliveryTime + " days";
+        // Create ContractOffer entity
+        // Fetch client and freelancer entities from DB
+        www.founded.com.model.client.Client client = clientRepository.findByUser_Id(senderId)
+            .orElseThrow(() -> new IllegalArgumentException("Client not found for userRegisterId=" + senderId));
+        www.founded.com.model.freelancer.Freelancer freelancer = freelancerRepository.findByUser_Id(recipientId)
+            .orElseThrow(() -> new IllegalArgumentException("Freelancer not found for userRegisterId=" + recipientId));
 
-    	chatMessageService.sendMessage(senderId, recipientId, contents, "proposal");
-        return ResponseEntity.ok("Proposal sent successfully.");
+        www.founded.com.model.payment.client_freelancer_contract.ContractOffer offer = new www.founded.com.model.payment.client_freelancer_contract.ContractOffer();
+        offer.setClientId(client);
+        offer.setFreelancerId(freelancer);
+        offer.setTitle("Proposal for gig/job");
+        offer.setDescription(coverLetter);
+        offer.setTotalBudget(new java.math.BigDecimal(rate));
+        offer.setDeliveryDays(Integer.parseInt(deliveryTime));
+        offer.setMessage(coverLetter);
+        offer.setStatus(www.founded.com.enum_.client_freelancer_contract.ContractOfferStatus.SENT);
+        offer.setIsPublic(false);
+        // Save offer
+        offer = chatMessageService.saveContractOffer(offer);
+        System.out.println("[DEBUG] Created ContractOffer with ID: " + offer.getId());
+
+        String contents = "Proposal: " + coverLetter + " | Rate: " + rate + " | Delivery: " + deliveryTime + " days";
+        chatMessageService.sendProposalMessage(senderId, recipientId, contents, offer.getId());
+        return ResponseEntity.ok("Proposal sent successfully. ContractOfferId=" + offer.getId());
     }
 
     @GetMapping("/conversations")
-    public ResponseEntity<List<Message>> getUserConversations(Authentication authentication) {
+    public ResponseEntity<List<ChatMessageResponseDTO>> getUserConversations(Authentication authentication) {
         String userEmail = authentication.getName();
         List<Message> conversations = chatMessageService.getUserConversations(userEmail);
-        return ResponseEntity.ok(conversations);
+        List<ChatMessageResponseDTO> response = conversations.stream().map(chatMessageService::toResponse).toList();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/messages")
-    public ResponseEntity<List<Message>> getMessagesBetweenUsers(
+    public ResponseEntity<List<ChatMessageResponseDTO>> getMessagesBetweenUsers(
             @RequestParam Long otherUserId,
             Authentication authentication) {
         String userEmail = authentication.getName();
         List<Message> messages = chatMessageService.getMessagesBetweenUsers(userEmail, otherUserId);
-        return ResponseEntity.ok(messages);
+        List<ChatMessageResponseDTO> response = messages.stream().map(chatMessageService::toResponse).toList();
+        return ResponseEntity.ok(response);
     }
 }

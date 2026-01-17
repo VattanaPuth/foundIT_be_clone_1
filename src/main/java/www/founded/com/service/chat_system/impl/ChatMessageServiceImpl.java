@@ -33,6 +33,69 @@ import www.founded.com.service.notification.NotificationService;
 @Data
 @RequiredArgsConstructor
 public class ChatMessageServiceImpl implements ChatMessageService {
+		private final www.founded.com.repository.client.ClientRepository clientRepository;
+		private final www.founded.com.repository.freelancer.FreelancerRepository freelancerRepository;
+		public www.founded.com.model.client.Client getClientById(Long userRegisterId) {
+		return clientRepository.findByUser_Id(userRegisterId)
+					.orElseThrow(() -> new IllegalArgumentException("Client not found for userRegisterId=" + userRegisterId));
+			}
+
+			public www.founded.com.model.freelancer.Freelancer getFreelancerById(Long userRegisterId) {
+				return freelancerRepository.findByUser_Id(userRegisterId)
+					.orElseThrow(() -> new IllegalArgumentException("Freelancer not found for userRegisterId=" + userRegisterId));
+			}
+		public ContractOffer saveContractOffer(ContractOffer offer) {
+			return contractOfferRepository.save(offer);
+		}
+
+		public void sendProposalMessage(Long senderId, Long recipientId, String messageContent, Long contractOfferId) {
+			UserRegister senderUser = userRegisterRepository.findById(senderId)
+				.orElseThrow(() -> new IllegalArgumentException("Sender not found"));
+			UserRegister recipientUser = userRegisterRepository.findById(recipientId)
+				.orElseThrow(() -> new IllegalArgumentException("Recipient not found"));
+
+			Sender sender = senderRepo.findByUser(senderUser)
+				.orElseGet(() -> {
+					Sender newSender = new Sender();
+					newSender.setUser(senderUser);
+					newSender.setSenderName(senderUser.getUsername());
+					newSender.setRole(senderUser.getRole());
+					newSender.setEmail(senderUser.getEmail());
+					return senderRepo.save(newSender);
+				});
+
+			Recipient recipient = recipientRepo.findByUser(recipientUser)
+				.orElseGet(() -> {
+					Recipient newRecipient = new Recipient();
+					newRecipient.setUser(recipientUser);
+					newRecipient.setRecipientName(recipientUser.getUsername());
+					newRecipient.setRole(recipientUser.getRole());
+					newRecipient.setEmail(recipientUser.getEmail());
+					return recipientRepo.save(newRecipient);
+				});
+
+			if (contractOfferId == null) {
+				System.err.println("[ERROR] Attempted to create proposal message without contractOfferId!");
+				throw new IllegalArgumentException("Proposal message must have a valid contractOfferId");
+			}
+
+			Message message = new Message();
+			message.setSenderId(sender);
+			message.setSenderName(sender.getSenderName());
+			message.setRecipientId(recipient);
+			message.setRecipientName(recipient.getRecipientName());
+			message.setContents(messageContent);
+			message.setMessageType("proposal");
+			message.setDay(LocalDate.now().getDayOfWeek());
+			message.setTime(Time.valueOf(LocalTime.now()));
+			message.setFileData(null);
+			message.setFileName(null);
+			message.setFileType(null);
+			message.setRead(false);
+			message.setContractOfferId(contractOfferId);
+			Message saved = chatRepo.save(message);
+			System.out.println("[DEBUG] Saved proposal message with contractOfferId: " + saved.getContractOfferId());
+		}
 	
 	private final ChatMessageRepository chatRepo;
 	private final UserRegisterRepository userRegisterRepository;
@@ -40,6 +103,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	private final SenderRepository senderRepo;
 	private final RecipientRepository recipientRepo;
 	private final ContractOfferRepository contractOfferRepository;
+	private final www.founded.com.service.seller.OrderService orderService;
 
 	@Transactional
 	@Override
@@ -97,6 +161,30 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 		messageResponse.setDay(LocalDate.now().getDayOfWeek());
 		messageResponse.setTime(Time.valueOf(LocalTime.now()));
 		messageResponse.setGigId(m.getGigId());
+		// Always set contractOfferId for proposal messages
+		Long contractOfferId = m.getContractOfferId();
+		if ("proposal".equalsIgnoreCase(m.getMessageType())) {
+			if (contractOfferId == null) {
+				// Try to extract contractOfferId from contents if present (e.g., "contractOfferId:123")
+				String contents = m.getContents();
+				if (contents != null && contents.contains("contractOfferId:")) {
+					try {
+						String[] parts = contents.split("contractOfferId:");
+						if (parts.length > 1) {
+							String idStr = parts[1].split("[^0-9]")[0];
+							contractOfferId = Long.parseLong(idStr);
+						}
+					} catch (Exception e) {
+						System.err.println("[WARN] Could not extract contractOfferId from proposal message contents: " + e.getMessage());
+					}
+				}
+				if (contractOfferId == null) {
+					System.err.println("[ERROR] contractOfferId is still null for proposal message! Setting to -1 as sentinel value.");
+					contractOfferId = -1L;
+				}
+			}
+		}
+		messageResponse.setContractOfferId(contractOfferId);
 		if (m != null && m.getFileData() != null && m.getFileData().length > 0) {
 			messageResponse.setFileName(m.getFileName());
 			messageResponse.setFileType(m.getFileType());
@@ -155,6 +243,25 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	        message.setFileName(null);
 	        message.setFileType(null);
 	        message.setRead(false);
+				// If messageType is 'proposal', try to extract contractOfferId from messageContent or other logic
+				if ("proposal".equalsIgnoreCase(messageType)) {
+					// Example: extract contractOfferId from messageContent if it contains it, or set via other means
+					// TODO: Replace this logic with actual extraction if available
+					Long contractOfferId = null;
+					// If messageContent contains something like "contractOfferId:123", extract it
+					if (messageContent != null && messageContent.contains("contractOfferId:")) {
+						try {
+							String[] parts = messageContent.split("contractOfferId:");
+							if (parts.length > 1) {
+								String idStr = parts[1].split(" ")[0].replaceAll("[^0-9]", "");
+								contractOfferId = Long.parseLong(idStr);
+							}
+						} catch (Exception e) {
+							System.err.println("[WARN] Could not extract contractOfferId from proposal messageContent: " + e.getMessage());
+						}
+					}
+					message.setContractOfferId(contractOfferId);
+				}
 
 			// Save sender and recipient if new
 			Sender savedSender = senderRepo.save(sender);
@@ -198,12 +305,30 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 	@Transactional
 	@Override
 	public void handleProposalAction(ProposalActionDTO action) {
+		System.out.println("[DEBUG] handleProposalAction: Received ProposalActionDTO: " + action);
+		if (action.getProposalId() == null) {
+			System.err.println("[ERROR] ProposalActionDTO.proposalId is null! Incoming action: " + action);
+			throw new IllegalArgumentException("Proposal ID must not be null in ProposalActionDTO");
+		}
 		ContractOffer offer = contractOfferRepository.findById(action.getProposalId())
 			.orElseThrow(() -> new RuntimeException("Proposal not found: " + action.getProposalId()));
 
 		if ("accept".equals(action.getAction())) {
 			offer.setStatus(ContractOfferStatus.ACCEPTED);
 			offer.setAcceptedAt(java.time.Instant.now());
+
+			// Create order in backend
+			try {
+				Long clientId = offer.getClientId() != null ? offer.getClientId().getId() : null;
+				Long freelancerId = offer.getFreelancerId() != null ? offer.getFreelancerId().getId() : null;
+				String proposalTitle = offer.getTitle();
+				Double budget = offer.getTotalBudget() != null ? offer.getTotalBudget().doubleValue() : 0.0;
+				String status = "PENDING";
+				orderService.createOrderFromFrontend(clientId, freelancerId, proposalTitle, budget, status);
+				System.out.println("[DEBUG] Order created for accepted proposal: clientId=" + clientId + ", freelancerId=" + freelancerId + ", title=" + proposalTitle);
+			} catch (Exception e) {
+				System.err.println("[ERROR] Failed to create order for accepted proposal: " + e.getMessage());
+			}
 		} else if ("decline".equals(action.getAction())) {
 			offer.setStatus(ContractOfferStatus.REJECTED);
 			offer.setRejectedAt(java.time.Instant.now());

@@ -149,6 +149,12 @@ public class OrderServiceImpl implements OrderService {
 		return orderHistoryRepo.findByOrderId(orderId);
 	}
 
+	@Override
+	public Order getOrderById(Long orderId) {
+		return orderRepo.findById(orderId)
+			.orElseThrow(() -> new IllegalArgumentException("Order not found"));
+	}
+
 	private void createOrderHistory(Order order, String action, String description) {
 		OrderHistory history = new OrderHistory();
 		history.setOrder(order);
@@ -175,5 +181,34 @@ public class OrderServiceImpl implements OrderService {
 				(order.getId() != null && order.getId().toString().contains(q))
 			)
 			.toList();
+	}
+
+	@Override
+	public Order createOrderFromFrontend(Long clientId, Long freelancerId, String proposalTitle, Double budget, String status) {
+		Client client = clientRepo.findById(clientId)
+			.orElseThrow(() -> new IllegalArgumentException("Client not found: " + clientId));
+		Freelancer freelancer = freelancerRepo.findById(freelancerId)
+			.orElseThrow(() -> new IllegalArgumentException("Freelancer not found: " + freelancerId));
+
+		Order order = new Order();
+		order.setClient(client);
+		order.setFreelancer(freelancer);
+		order.setProjectTitle(proposalTitle);
+		order.setAmount(BigDecimal.valueOf(budget));
+		order.setTotalAmount(BigDecimal.valueOf(budget));
+		order.setCreatedAt(Instant.now());
+		order.setUpdatedAt(Instant.now());
+		if (status != null) {
+			try {
+				order.setStatus(www.founded.com.enum_.seller.OrderStatus.valueOf(status));
+			} catch (Exception e) {
+				order.setStatus(www.founded.com.enum_.seller.OrderStatus.PENDING);
+			}
+		} else {
+			order.setStatus(www.founded.com.enum_.seller.OrderStatus.PENDING);
+		}
+		Order savedOrder = orderRepo.save(order);
+		System.out.println("[DEBUG] Order created: id=" + savedOrder.getId() + ", clientId=" + clientId + ", freelancerId=" + freelancerId + ", title=" + proposalTitle + ", budget=" + budget);
+		return savedOrder;
 	}
 }

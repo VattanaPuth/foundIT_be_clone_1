@@ -20,4 +20,8 @@ public interface OrderService {
     // Search orders by query
     List<Order> searchOrders(String query);
     List<OrderHistory> getOrderHistory(Long orderId);
+    Order getOrderById(Long orderId);
+
+    // Create order from frontend request
+    Order createOrderFromFrontend(Long clientId, Long freelancerId, String proposalTitle, Double budget, String status);
 }

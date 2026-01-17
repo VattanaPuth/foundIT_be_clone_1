@@ -52,7 +52,7 @@ public class SecurityConfig{
 			.authorizeHttpRequests(rq -> rq
 			  .requestMatchers("/", "/login**", "/oauth2/**", "/css/**", "/js/**").permitAll()
 			      .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
-			      .requestMatchers(HttpMethod.POST, "/login", "/api/login", "/api/login/email", "/api/check-auth", "/register", "/register/**").permitAll()                 
+			      .requestMatchers(HttpMethod.POST, "/login", "/api/login", "/api/login/email", "/api/check-auth", "/register", "/register/**").permitAll()
 			      .requestMatchers(HttpMethod.PUT, "/api/user/update-role").authenticated()                        
 			      // Allow all WebSocket upgrade requests to /chat and /chat/**
 			      .requestMatchers("/chat", "/chat/**").permitAll()

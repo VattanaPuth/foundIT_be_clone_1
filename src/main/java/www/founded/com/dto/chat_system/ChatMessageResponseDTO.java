@@ -23,4 +23,7 @@ public class ChatMessageResponseDTO {
 	private Time time;
     
 	private Long gigId;
+
+	// Add contractOfferId for proposal messages
+	private Long contractOfferId;
 }

@@ -50,4 +50,7 @@ public class Message {
 	
 	// Link chat to gig if relevant
 	private Long gigId;
+
+	// Link chat to contract offer (proposal) if relevant
+	private Long contractOfferId;
 }
