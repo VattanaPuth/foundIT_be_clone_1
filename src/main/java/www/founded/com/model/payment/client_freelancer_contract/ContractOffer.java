@@ -34,6 +34,9 @@ import www.founded.com.model.freelancer.Freelancer;
         })
 @Data
 public class ContractOffer {
+        public void setIsPublic(boolean isPublic) {
+                this.isPublic = isPublic;
+        }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

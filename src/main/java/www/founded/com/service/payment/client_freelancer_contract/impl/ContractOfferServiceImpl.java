@@ -78,7 +78,7 @@ public class ContractOfferServiceImpl implements ContractOfferService {
         offer.setCurrency(dto.getCurrency() == null ? "USD" : dto.getCurrency());
         offer.setMessage(dto.getMessage());
         offer.setExpiresAt(dto.getExpiresAt());
-        offer.setPublic(false); // Default to not public
+        offer.setIsPublic(false); // Default to not public
 
         offer.setStatus(ContractOfferStatus.SENT);
         offer = offerRepo.save(offer);
@@ -216,7 +216,7 @@ public class ContractOfferServiceImpl implements ContractOfferService {
 	public ContractOffer setAllOffersPublic() {
 		List<ContractOffer> offers = offerRepo.findAll();
         for (ContractOffer offer : offers) {
-            offer.setPublic(true);  // Make the offer public
+            offer.setIsPublic(true);  // Make the offer public
         }
         return (ContractOffer) offerRepo.saveAll(offers);  // Save all updated offers
     }
