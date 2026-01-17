@@ -83,6 +83,8 @@ public class ChatController {
         www.founded.com.model.payment.client_freelancer_contract.ContractOffer offer = new www.founded.com.model.payment.client_freelancer_contract.ContractOffer();
         offer.setClientId(client);
         offer.setFreelancerId(freelancer);
+        offer.setDirection(www.founded.com.enum_.client_freelancer_contract.OfferDirection.FREELANCER_TO_CLIENT);
+        offer.setSourceType(www.founded.com.enum_.client_freelancer_contract.OfferSourceType.DIRECT);
         offer.setTitle("Proposal for gig/job");
         offer.setDescription(coverLetter);
         offer.setTotalBudget(new java.math.BigDecimal(rate));
