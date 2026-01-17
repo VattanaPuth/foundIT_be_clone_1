@@ -15,15 +15,8 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Allow frontend origin
-        configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:3001",
-            "https://foundit-c7e7.onrender.com",  // Production backend
-            "*"  // Allow all origins for now (consider restricting in production)
-        ));
+        // Allow all origins using pattern (safer than wildcard with specific origins)
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
@@ -33,8 +26,8 @@ public class CorsConfig {
         // Allow all headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
-        // Allow credentials (cookies, authorization headers)
-        configuration.setAllowCredentials(false);  // Changed to false when using wildcard origin
+        // Allow credentials (can be true with origin patterns)
+        configuration.setAllowCredentials(true);
         
         // Expose Authorization header so frontend can read it
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
